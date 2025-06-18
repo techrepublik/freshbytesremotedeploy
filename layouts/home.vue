@@ -134,7 +134,7 @@
     </aside>
 
 
-    <div class="p-4 mt-14 sm:ml-64 bg-amber-100">
+    <div class="p-4 mt-14 sm:ml-64">
         <slot/>
     </div>
 
