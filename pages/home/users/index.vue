@@ -1,11 +1,9 @@
 <script setup>
     definePageMeta({
-    layout: false,
+    layout: "home",
 })
 </script>
 
 <template>
-        <NuxtLayout name="home">
             <h1>Users</h1>
-        </NuxtLayout>
 </template>

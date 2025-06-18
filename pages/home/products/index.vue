@@ -1,11 +1,10 @@
 <script setup>
     definePageMeta({
-    layout: false,
+    layout: "home",
 })
 </script>
 
 <template>
-        <NuxtLayout name="home">
             <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <li class="inline-flex items-center">
@@ -73,5 +72,4 @@
                 </div>
                 </div>
 
-        </NuxtLayout>
 </template>
