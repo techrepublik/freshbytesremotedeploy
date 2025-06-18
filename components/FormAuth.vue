@@ -18,7 +18,7 @@
             </div>
             <label for="remember" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Remember me</label>
         </div>
-        <button type="submit" class="text-white bg-emerald-700 hover:bg-emerald-800 focus:ring-4 focus:outline-none focus:ring-emerald-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800">Submit</button>
+        <button type="submit" class="text-white bg-emerald-700 hover:bg-emerald-800 focus:ring-4 focus:outline-none focus:ring-emerald-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:focus:ring-emerald-800">{{ isLoading ? 'Logging in...' : 'Submit' }}</button>
     </form>
 </template>
 
@@ -28,6 +28,10 @@
             type: Object,
             required: true,
             default: () => ({ email: '', password: '' })
+        },
+        isLoading: {
+            type: Boolean,
+            default: false
         }
     })
 
