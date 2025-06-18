@@ -88,6 +88,7 @@ export const useAuth = () => {
         user.value = null
         
         console.log('✅ Mock logout successful')
+        await navigateTo('/login')
         
         } catch (error) {
         console.error('❌ Mock logout failed:', error)
@@ -150,33 +151,33 @@ export const useAuth = () => {
         }
 
         try {
-        // Decode mock token
-        const decoded = JSON.parse(atob(authCookie.value))
-        
-        // Check if token is expired
-        if (Date.now() > decoded.exp) {
-            authCookie.value = null
-            user.value = null
-            console.log('🔒 Mock token expired')
-            return false
-        }
+            // Decode mock token
+            const decoded = JSON.parse(atob(authCookie.value))
+            
+            // Check if token is expired
+            if (Date.now() > decoded.exp) {
+                authCookie.value = null
+                user.value = null
+                console.log('🔒 Mock token expired')
+                return false
+            }
 
-        // Set user from token
-        user.value = {
-            id: decoded.id,
-            email: decoded.email,
-            name: decoded.name,
-            role: decoded.role
-        }
-        
-        console.log('✅ Mock auth check successful:', user.value)
-        return true
+            // Set user from token
+            user.value = {
+                id: decoded.id,
+                email: decoded.email,
+                name: decoded.name,
+                role: decoded.role
+            }
+            
+            console.log('✅ Mock auth check successful:', user.value)
+            return true
         
         } catch (error) {
-        console.error('❌ Mock auth check failed:', error)
-        authCookie.value = null
-        user.value = null
-        return false
+            console.error('❌ Mock auth check failed:', error)
+            authCookie.value = null
+            user.value = null
+            return false
         }
     }
 
