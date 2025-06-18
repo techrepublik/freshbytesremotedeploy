@@ -5,7 +5,7 @@
 </script>
 
 <template>
-        <NuxtLayout name="product">
+        <NuxtLayout name="home">
             <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <li class="inline-flex items-center">
@@ -58,7 +58,7 @@
                     </svg>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition">
+                    <button class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
                     <span class="mr-2">+</span> Add new product
                     </button>
                     <div class="relative">
