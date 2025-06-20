@@ -2,29 +2,32 @@
 definePageMeta({
     layout: "home",
 })
-const products = ref([
-    {
-        id: 1,
-        name: "Orange",
-        parentCategory: "Citrus",
-        Category: "Fruits",
-        description: "Papapa",
-        status: "Inactive"
-    },
-])
-products.value.push({
-    id: 2,
-    name: "Mango",
-    parentCategory: "Stone Fruit",
-    Category: "Fruits",
-    description: "Mango",
-    status: "Active"
-})
+// const products = ref([
+//     {
+//         category_id: 1,
+//         sub_id: 2,
+//         sub_name: "Citrus",
+//         sub_description: "Papapa",
+//         sub_created_at: "2023",
+//         sub_updated_at: "2024"
+//     },
+// ])
+// products.value.push({
+//     category_id: 1,
+//     sub_id: 3,
+//     sub_name: "Leafy G",
+//     sub_description: "Pafsdfsdfa",
+//     sub_created_at: "2023",
+//     sub_updated_at: "2034"
+// })
+const api = "http://192.168.63.238:8000"; // API HERE
+const { data: subcategories, pending } = await useFetch(`${api}/subcategories/`);
+
 import { ref, computed } from 'vue'
 
 // Reactive variables
 const selectedCategory = ref('')
-const selectedSubCategory = ref('')
+
 
 // Sub-category map
 const subCategories = {
@@ -36,6 +39,51 @@ const subCategories = {
 const availableSubCategories = computed(() => {
     return subCategories[selectedCategory.value] || []
 })
+
+const isCategoryVisible = ref(false)
+const selectedSubCategory = ref(null)
+
+function showCategoryModal(subcategory) {
+    selectedSubCategory.value = subcategory
+    isCategoryVisible.value = true
+}
+const isUpdateVisible = ref(false)
+const productToUpdate = ref(null)
+
+function openUpdateModal(product) {
+    productToUpdate.value = product
+    isUpdateVisible.value = true
+}
+const isDeleteVisible = ref(false)
+const productToDelete = ref(null)
+
+function openDeleteModal(product) {
+    productToDelete.value = product
+    isDeleteVisible.value = true
+}
+
+function closeDeleteModal() {
+    isDeleteVisible.value = false
+    productToDelete.value = null
+}
+
+function handleDelete() {
+    // Do your deletion logic here using `productToDelete.value`
+    console.log("Deleting:", productToDelete.value)
+    closeDeleteModal()
+}
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr; // fallback if invalid
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
 </script>
 
 <template>
@@ -88,6 +136,80 @@ const availableSubCategories = computed(() => {
             </div>
         </div>
 
+        <div id="addSubCategory" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                    Add Sub-Category</h2>
+                <form class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-1 font-medium">Sub-Category
+                                Name</label>
+                            <input type="text"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                placeholder="Type sub-category name" />
+                        </div>
+                        <div>
+                            <label class="block mb-1 font-medium">Category
+                                ID</label>
+                            <input type="number"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                placeholder="Type sub-category name" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 dark:text-gray-300">Parent-Category</label>
+                            <select class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                                <option>Citrus</option>
+                                <option>Berries</option>
+                                <option>Tropical</option>
+                                <option>Stone Fruits</option>
+                                <option>Melons</option>
+                                <option>Vegetables</option>
+                                <option>Root Vegetable</option>
+                                <option>Leafy Greens</option>
+                                <option>Cruciferous Vegetables</option>
+                                <option>Nightshades</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-1 font-medium">Sub-Category
+                                Description</label>
+                            <textarea
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                rows="3" placeholder="Write product description here"></textarea>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block mb-1 font-medium">Category Image</label>
+                        <div
+                            class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                            <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" stroke-width="2"
+                                viewBox="0 0 24 24">
+                                <path d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span class="font-semibold">Click to upload</span> or
+                            drag and drop
+                            <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX.
+                                800×400px)</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2 mt-6">
+                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
+                            product</button>
+                        <button onclick="document.getElementById('addCategory').classList.add('hidden')"
+                            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
+
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
                 <input type="text" placeholder="Search"
@@ -139,28 +261,28 @@ const availableSubCategories = computed(() => {
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Sub-Category Name
+                                        Category ID
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        ID
+                                        Sub-Category ID
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Parent Category
+                                        Sub-Category
                                     </th>
-                                    <th scope="col"
-                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Category
-                                    </th>
-
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
                                         Description
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Status
+                                        Created at
+                                    </th>
+
+                                    <th scope="col"
+                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                        Updated at
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
@@ -169,49 +291,47 @@ const availableSubCategories = computed(() => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="product in products" :key="product.id"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <tr v-for="subcategory in subcategories" :key="subcategory.category_id"
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                    @click="showCategoryModal(subcategory)">
+
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
-                                            <input :id="`checkbox-${product.id}`" type="checkbox"
+                                            <input :id="`checkbox-${subcategory.sub_category_id}`" type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                                            <label :for="`checkbox-${product.id}`" class="sr-only">checkbox</label>
+                                            <label :for="`checkbox-${subcategory.sub_category_id}`" class="sr-only">checkbox</label>
                                         </div>
-
-                                    </td>
-                                    <td
-                                        class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.name }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.id }}
+                                        {{ subcategory.category_id }}
+                                    </td>
+                                    <td
+                                        class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{ subcategory.sub_category_id }}
                                     </td>
                                     <td
                                         class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.parentCategory }}
+                                        {{ subcategory.sub_category_name }}
                                     </td>
-                                    <td
-                                        class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.Category }}
-                                    </td>
+
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
-                                        {{ product.description }}
+                                        {{ subcategory.sub_category_description }}
+                                    </td>
+                                    <td
+                                        class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{ formatDate(subcategory.created_at) }}
+                                    </td>
+                                    <td
+                                        class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{ formatDate(subcategory.updated_at) }}
                                     </td>
 
-                                    <td class="p-4 text-base font-medium whitespace-nowrap">
-                                        <span :class="product.status === 'Inactive'
-                                            ? 'text-red-600 font-semibold'
-                                            : 'text-green-600 font-semibold'">
-                                            {{ product.status }}
-                                        </span>
-                                    </td>
+
                                     <td class="p-4 space-x-2 whitespace-nowrap">
                                         <div class="flex justify-center space-x-2">
-
-                                            <button type="button"
-                                                onclick="document.getElementById('updateModal').classList.remove('hidden')"
+                                            <button type="button" @click.stop="openUpdateModal(subcategory)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path
@@ -223,188 +343,189 @@ const availableSubCategories = computed(() => {
                                                 </svg>
                                                 Update
                                             </button>
-                                            <button type="button"
-                                                onclick="document.getElementById('deleteModal').classList.remove('hidden')"
+                                            <button type="button" @click.stop="openDeleteModal(subcategory)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd"
                                                         d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
                                                         clip-rule="evenodd" />
                                                 </svg>
-                                                Delete item
+                                                Delete sub-category
                                             </button>
                                         </div>
-                                            <div id="deleteModal"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
-                                                <div
-                                                    class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                                                    <h2
-                                                        class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                                                        Confirm Deletion</h2>
-                                                    <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you
-                                                        want to delete this sub-category?<br>
-                                                        This action cannot be undone.</p>
 
-                                                    <div class="flex justify-end gap-2">
-                                                        <button
-                                                            onclick="document.getElementById('deleteModal').classList.add('hidden')"
-                                                            class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                                            Cancel
-                                                        </button>
-                                                        <button onclick="handleDelete()"
-                                                            class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                                                            Yes, delete
-                                                        </button>
+                                        <div id="showCategory" v-if="isCategoryVisible"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+
+                                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto"
+                                                @click.stop>
+                                                <div class="flex flex-col gap-1 mb-4">
+                                                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
+                                                        selectedSubCategory?.sub_category_name }}</h2>
+                                                </div>
+
+
+                                                <div class="flex gap-4 mb-4">
+                                                    <div
+                                                        class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
+                                                        <img src="\assets\images\logos-12-12.png" alt="Product"
+                                                            class="object-contain h-20" />
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div id="updateModal"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
-                                                <div
-                                                    class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl">
-                                                    <h2
-                                                        class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                                                        Update Sub-Category</h2>
 
-                                                    <form class="space-y-4">
-                                                        <div class="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label
-                                                                    class="block text-gray-700 dark:text-gray-300">Sub-Category
-                                                                    Name</label>
-                                                                <input type="text"
-                                                                    class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                                                    placeholder="Mango">
+                                                <form class="space-y-4">
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label class="block mb-1 font-medium">Sub-Category
+                                                                Name</label>
+                                                            <div
+                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
+                                                                {{ selectedSubCategory?.sub_category_name }}
                                                             </div>
-                                                        </div>
-                                                        <div>
-                                                            <label
-                                                                class="block text-gray-700 dark:text-gray-300">Parent-Category</label>
-                                                            <select
-                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-                                                                <option>Citrus</option>
-                                                                <option>Berries</option>
-                                                                <option>Tropical</option>
-                                                                <option>Stone Fruits</option>
-                                                                <option>Melons</option>
-                                                                <option>Vegetables</option>
-                                                                <option>Root Vegetable</option>
-                                                                <option>Leafy Greens</option>
-                                                                <option>Cruciferous Vegetables</option>
-                                                                <option>Nightshades</option>
-                                                            </select>
-                                                        </div>
 
+                                                        </div>
                                                         <div>
-                                                            <label
-                                                                class="block text-gray-700 dark:text-gray-300">Sub-Category
+                                                            <label class="block mb-1 font-medium">Category
                                                                 Description</label>
-                                                            <textarea
-                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                                                rows="4">Wow sub-category description</textarea>
+                                                            <textarea rows="3" disabled
+                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedSubCategory?.sub_category_description }}</textarea>
                                                         </div>
-
                                                         <div>
-                                                            <label class="block mb-1 font-medium">Sub-Category Image</label>
-                                                            <div
-                                                                class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                                                                <svg class="w-12 h-12 mb-2" fill="none"
-                                                                    stroke="currentColor" stroke-width="2"
-                                                                    viewBox="0 0 24 24">
-                                                                    <path d="M12 4v16m8-8H4" />
-                                                                </svg>
-                                                                <span class="font-semibold">Click to upload</span> or
-                                                                drag and drop
-                                                                <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX.
-                                                                    800×400px)</div>
-                                                            </div>
+                                                            <label class="block mb-1 font-medium">Created at</label>
+                                                            <textarea rows="3" disabled
+                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.created_at) }}</textarea>
                                                         </div>
+                                                        <div>
+                                                            <label class="block mb-1 font-medium">Updated
+                                                                at</label>
+                                                            <textarea rows="3" disabled
+                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.updated_at) }}</textarea>
+                                                        </div>
+                                                    </div>
 
-                                                        <div class="flex justify-between mt-6">
-                                                            <button type="submit"
-                                                                class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update
-                                                                Category</button>
-                                                            <button type="button"
-                                                                onclick="document.getElementById('updateModal').classList.add('hidden')"
-                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </form>
+
+
+                                                    <div class="flex justify-end space-x-2 mt-6">
+                                                        <button type="button"
+                                                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
+                                                            product</button>
+                                                        <button type="button"
+                                                            @click="isCategoryVisible = false; selectedSubCategory = null"
+                                                            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                                            Cancel
+                                                        </button>
+
+
+                                                    </div>
+
+                                                </form>
+                                            </div>
+                                        </div>
+
+                                        <div v-if="isDeleteVisible" id="deleteModal"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+
+                                            <div @click.stop
+                                                class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                                                    Confirm Deletion</h2>
+                                                <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you
+                                                    want to delete this category?<br>
+                                                    This action cannot be undone.</p>
+
+                                                <div class="flex justify-end gap-2">
+                                                    <button @click="isDeleteVisible = false; productToDelete = null"
+                                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                                        Cancel
+                                                    </button>
+                                                    <button @click="isDeleteVisible = false; productToDelete = null"
+                                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                                        Yes, delete
+                                                    </button>
                                                 </div>
                                             </div>
-                                            <div id="addSubCategory"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
-                                                <div
-                                                    class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+                                        </div>
+                                        <div id="updateModal" v-if="isUpdateVisible"
+                                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                                            <div @click.stop class="bg-white p-6 rounded shadow-lg max-w-xl w-full">
+                                                <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                                                    Update Category</h2>
 
-                                                    <h2
-                                                        class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                                                        Add Sub-Category</h2>
-                                                    <form class="space-y-4">
-                                                        <div class="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Sub-Category
-                                                                    Name</label>
-                                                                <input type="text"
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                                                    placeholder="Type sub-category name" />
-                                                            </div>
-                                                            <div>
+                                                <form class="space-y-4">
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Parent-Category</label>
-                                                            <select
-                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
-                                                                <option>Citrus</option>
-                                                                <option>Berries</option>
-                                                                <option>Tropical</option>
-                                                                <option>Stone Fruits</option>
-                                                                <option>Melons</option>
-                                                                <option>Vegetables</option>
-                                                                <option>Root Vegetable</option>
-                                                                <option>Leafy Greens</option>
-                                                                <option>Cruciferous Vegetables</option>
-                                                                <option>Nightshades</option>
-                                                            </select>
+                                                                class="block text-gray-700 dark:text-gray-300">Category
+                                                                Name</label>
+                                                            <input type="text"
+                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                                placeholder="Fruits">
                                                         </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Sub-Category
-                                                                    Description</label>
-                                                                <textarea
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                                                    rows="3"
-                                                                    placeholder="Write product description here"></textarea>
-                                                            </div>
-                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block mb-1 font-medium">Category
+                                                            Status</label>
+                                                        <select
+                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
+                                                            <option>Select Category Status</option>
+                                                            <option>Inactive</option>
+                                                            <option>Active</option>
 
-                                                        <div>
-                                                            <label class="block mb-1 font-medium">Category Image</label>
-                                                            <div
-                                                                class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                                                                <svg class="w-12 h-12 mb-2" fill="none"
-                                                                    stroke="currentColor" stroke-width="2"
-                                                                    viewBox="0 0 24 24">
-                                                                    <path d="M12 4v16m8-8H4" />
-                                                                </svg>
-                                                                <span class="font-semibold">Click to upload</span> or
-                                                                drag and drop
-                                                                <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX.
-                                                                    800×400px)</div>
-                                                            </div>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-gray-700 dark:text-gray-300">Created
+                                                            At
+                                                        </label>
+                                                        <input type="text"
+                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                                            placeholder="Created Date">
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-gray-700 dark:text-gray-300">Updated
+                                                            At
+                                                        </label>
+                                                        <input type="text"
+                                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                            placeholder="Updated date">
+                                                    </div>
+
+
+
+                                                    <div>
+                                                        <label class="block text-gray-700 dark:text-gray-300">Categpry
+                                                            Description</label>
+                                                        <textarea
+                                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                            rows="4">Wow category description</textarea>
+                                                    </div>
+
+                                                    <div>
+                                                        <label class="block mb-1 font-medium">Category Image</label>
+                                                        <div
+                                                            class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+                                                            <svg class="w-12 h-12 mb-2" fill="none"
+                                                                stroke="currentColor" stroke-width="2"
+                                                                viewBox="0 0 24 24">
+                                                                <path d="M12 4v16m8-8H4" />
+                                                            </svg>
+                                                            <span class="font-semibold">Click to upload</span> or
+                                                            drag and drop
+                                                            <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX.
+                                                                800×400px)</div>
                                                         </div>
-                                                        <div class="flex justify-end space-x-2 mt-6">
-                                                            <button type="button"
-                                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
-                                                                product</button>
-                                                            <button type="button"
-                                                                onclick="document.getElementById('addSubCategory').classList.add('hidden')"
-                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                </div>
+                                                    </div>
+
+                                                    <div class="flex justify-between mt-6">
+                                                        <button type="submit"
+                                                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update
+                                                            Category</button>
+                                                        <button @click="isUpdateVisible = false"
+                                                            class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Close</button>
+                                                    </div>
+                                                </form>
                                             </div>
+                                        </div>
 
 
 
@@ -417,11 +538,6 @@ const availableSubCategories = computed(() => {
                             </tbody>
                         </table>
                         <hr class="my-4 border-gray-200 dark:border-gray-700">
-
-
-
-
-
 
                         <div class="flex justify-end items-center space-x-4 mb-4">
                             <button class="text-sm text-gray-600 hover:underline">Print barcodes</button>
@@ -461,16 +577,4 @@ const availableSubCategories = computed(() => {
             </div>
         </div>
     </div>
-
-
-
-
-
-
-
-
-
-
-
-
 </template>
