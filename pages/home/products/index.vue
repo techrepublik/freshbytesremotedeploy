@@ -1,100 +1,102 @@
 <script setup>
-    definePageMeta({
-        layout: "home",
-    });
+definePageMeta({
+    layout: "home",
+});
 
-    const api = "http://192.168.63.238:8000"; // API HERE
-    const { data: products } = await useFetch(`${api}/products/`);
-    const { data: categories } = await useFetch(`${api}/categories/`);
-    const { data: subcategories } = await useFetch(`${api}/subcategories/`);
+const api = "http://192.168.63.238:8000"; // API HERE
+const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
+const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
+const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
 
-
-
-    // const products = ref([
-    //     {
-    //         id: 1,
-    //         name: "Papaya",
-    //         category: "Fruits",
-    //         price: "9",
-    //         stock: "123",
-    //         totalSales: "₱1299.99",
-    //         status: "Inactive"
-    //     },
-    // ]);
-    // products.value.push({
-    //     id: 2,
-    //     name: "Banana",
-    //     category: "Fruits",
-    //     price: "12",
-    //     stock: "50",
-    //     totalSales: "₱500.00",
-    //     status: "Active"
-    // });
+const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
 
-    function handleDelete() {
 
-        alert("Item deleted!");
-        document.getElementById('deleteModal').classList.add('hidden');
-    }
-    import { ref, computed } from 'vue';
+// const products = ref([
+//     {
+//         id: 1,
+//         name: "Papaya",
+//         category: "Fruits",
+//         price: "9",
+//         stock: "123",
+//         totalSales: "₱1299.99",
+//         status: "Inactive"
+//     },
+// ]);
+// products.value.push({
+//     id: 2,
+//     name: "Banana",
+//     category: "Fruits",
+//     price: "12",
+//     stock: "50",
+//     totalSales: "₱500.00",
+//     status: "Active"
+// });
 
-    // Reactive variables
-    const selectedCategory = ref('');
-    const selectedSubCategory = ref('');
 
-    // Sub-category map
-    const subCategories = {
-        Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-        Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
-    };
+function handleDelete() {
 
-    // Computed options based on selected category
-    const availableSubCategories = computed(() => {
-        return subCategories[selectedCategory.value] || [];
-    });
+    alert("Item deleted!");
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+import { ref, computed } from 'vue';
 
-    const showAddProductModal = ref(false);
-    function openAddProductModal() {
-        showAddProductModal.value = true;
-    }
-    function closeAddProductModal() {
-        showAddProductModal.value = false;
-    }
+// Reactive variables
+const selectedCategory = ref('');
+const selectedSubCategory = ref('');
 
-    const showProductModal = ref(false);
-    const selectedProduct = ref(null);
+// Sub-category map
+const subCategories = {
+    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
+    Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
+};
 
-    function openProductModal(product) {
-        selectedProduct.value = product;
-        showProductModal.value = true;
-    }
-    function closeProductModal() {
-        showProductModal.value = false;
-        selectedProduct.value = null;
-    }
+// Computed options based on selected category
+const availableSubCategories = computed(() => {
+    return subCategories[selectedCategory.value] || [];
+});
 
-    const showUpdateModal = ref(false);
+const showAddProductModal = ref(false);
+function openAddProductModal() {
+    showAddProductModal.value = true;
+}
+function closeAddProductModal() {
+    showAddProductModal.value = false;
+}
 
-    function openUpdateModal() {
-        showUpdateModal.value = true;
-    }
-    function closeUpdateModal() {
-        showUpdateModal.value = false;
-    }
+const showProductModal = ref(false);
+const selectedProduct = ref(null);
 
-    const showDeleteModal = ref(false);
-    const productToDelete = ref(null);
+function openProductModal(product) {
+    selectedProduct.value = product;
+    showProductModal.value = true;
+}
+function closeProductModal() {
+    showProductModal.value = false;
+    selectedProduct.value = null;
+}
 
-    function openDeleteModal(product) {
-        productToDelete.value = product;
-        showDeleteModal.value = true;
-    }
-    function closeDeleteModal() {
-        showDeleteModal.value = false;
-        productToDelete.value = null;
-    }
-    function formatDate(dateStr) {
+const showUpdateModal = ref(false);
+
+function openUpdateModal() {
+    showUpdateModal.value = true;
+}
+function closeUpdateModal() {
+    showUpdateModal.value = false;
+}
+
+const showDeleteModal = ref(false);
+const productToDelete = ref(null);
+
+function openDeleteModal(product) {
+    productToDelete.value = product;
+    showDeleteModal.value = true;
+}
+function closeDeleteModal() {
+    showDeleteModal.value = false;
+    productToDelete.value = null;
+}
+function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
     if (isNaN(date)) return dateStr; // fallback if invalid
@@ -105,10 +107,18 @@
         hour: '2-digit',
         minute: '2-digit'
     });
-    }
+}
 </script>
 
 <template>
+    <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="loading">
+        
+        <div role="status">
+            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg>
+            <span class="sr-only">Loading...</span>
+        </div>
+
+    </div>
     <div class="relative min-h-screen">
         <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
@@ -144,7 +154,7 @@
                 <span
                     class="inline-flex items-center px-2 py-0.5 mb-2 text-xs font-medium text-green-800 bg-green-100 rounded dark:bg-green-900 dark:text-green-200">↑
                     0%</span>
-                <h5 class="mt-0.8 text-3xl font-bold text-gray-900 dark:text-white">{{ products.length }}</h5>
+                <h5 class="mt-0.8 text-3xl font-bold text-gray-900 dark:text-white">{{ products?.length }}</h5>
                 <p class="mt-2 text-gray-500 dark:text-gray-400">Total Products</p>
             </a>
 
@@ -175,6 +185,7 @@
                 <p class="mt-2 text-gray-500 dark:text-gray-400">Returned Products</p>
             </a>
         </div>
+        <h1 v-if="loading">Loading...</h1>
         <div class="flex items-center justify-between mt-4 mb-4">
             <div class="flex items-center space-x-2">
                 <span class="font-semibold text-black text-xl">FreshBytes Products</span>
@@ -269,12 +280,12 @@
                         <div>
                             <label class="block mb-1 font-medium">Posted Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"/>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Harvest Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"/>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
                         </div>
                     </div>
                     <div>
@@ -405,7 +416,8 @@
                                         <div class="flex items-center">
                                             <input :id="`checkbox-${product.product_id}`" type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                                            <label :for="`checkbox-${product.product_id}`" class="sr-only">checkbox</label>
+                                            <label :for="`checkbox-${product.product_id}`"
+                                                class="sr-only">checkbox</label>
                                         </div>
                                     </td>
                                     <td
@@ -422,7 +434,8 @@
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ categories.find(cat => cat.category_id === product.category_id)?.category_name || 'N/A' }}
+                                        {{categories.find(cat => cat.category_id ===
+                                            product.category_id)?.category_name || 'N/A'}}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -520,14 +533,16 @@
                                                         </div>
                                                         <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Current Price</label>
+                                                                class="block text-gray-700 dark:text-gray-300">Current
+                                                                Price</label>
                                                             <input type="number"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="₱259.00">
                                                         </div>
                                                         <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Discounted Price</label>
+                                                                class="block text-gray-700 dark:text-gray-300">Discounted
+                                                                Price</label>
                                                             <input type="number"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="₱240.00">
@@ -560,16 +575,17 @@
                                                                 placeholder="121">
                                                         </div>
                                                         <div>
-                                                            <label
-                                                                class="block text-gray-700 dark:text-gray-300">Posted Date</label>
-                                                            <input 
+                                                            <label class="block text-gray-700 dark:text-gray-300">Posted
+                                                                Date</label>
+                                                            <input
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="06/20/2025">
                                                         </div>
                                                         <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Harvest Date</label>
-                                                            <input 
+                                                                class="block text-gray-700 dark:text-gray-300">Harvest
+                                                                Date</label>
+                                                            <input
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="06/18/2025">
                                                         </div>
@@ -640,7 +656,8 @@
                         <!-- Product Details Modal -->
                         <div v-if="showProductModal && !showUpdateModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 bg-gray-800/30">
-                            <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-8 relative h-screen overflow-y-auto">
+                            <div
+                                class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-8 relative h-screen overflow-y-auto">
                                 <!-- Close button -->
                                 <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
                                     @click="closeProductModal" aria-label="Close">&times;</button>
@@ -687,11 +704,15 @@
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Category</div>
-                                        <div class="font-medium text-gray-900"> {{ categories.find(cat => cat.category_id === selectedProduct.category_id)?.category_name || 'N/A' }} </div>
+                                        <div class="font-medium text-gray-900"> {{categories.find(cat =>
+                                            cat.category_id === selectedProduct.category_id)?.category_name || 'N/A'}}
+                                        </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sub-category</div>
-                                        <div class="font-medium text-gray-900"> {{ subcategories.find(subcat => subcat.sub_category_id === selectedProduct.sub_category_id)?.sub_category_name || 'N/A' }} </div>
+                                        <div class="font-medium text-gray-900"> {{subcategories.find(subcat =>
+                                            subcat.sub_category_id ===
+                                            selectedProduct.sub_category_id)?.sub_category_name || 'N/A'}} </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Status</div>
@@ -709,15 +730,18 @@
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Current Price</div>
-                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.product_price }}</div>
+                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.product_price }}
+                                        </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Discounted Price</div>
-                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.product_discountedPrice }}</div>
+                                        <div class="font-medium text-gray-900">₱{{
+                                            selectedProduct.product_discountedPrice }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Location</div>
-                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_location }}</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_location }}
+                                        </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Quantity</div>
@@ -729,11 +753,13 @@
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Posted Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.post_date) }}</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.post_date)
+                                        }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Harvest Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.harvest_date) }}</div>
+                                        <div class="font-medium text-gray-900">{{
+                                            formatDate(selectedProduct.harvest_date) }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">On Discount?</div>
@@ -741,15 +767,18 @@
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Discounted Amount</div>
-                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.discounted_amount }}</div>
+                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.discounted_amount }}
+                                        </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Offer Start Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.offer_start_date) }}</div>
+                                        <div class="font-medium text-gray-900">{{
+                                            formatDate(selectedProduct.offer_start_date) }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Offer End Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.offer_end_date) }}</div>
+                                        <div class="font-medium text-gray-900">{{
+                                            formatDate(selectedProduct.offer_end_date) }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sell Count</div>
@@ -761,11 +790,13 @@
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Created Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.created_at) }}</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.created_at)
+                                        }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Updated Date</div>
-                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at) }}</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at)
+                                        }}</div>
                                     </div>
                                 </div>
                                 <!-- Action Buttons -->
