@@ -1,58 +1,74 @@
 <script setup>
 definePageMeta({
     layout: "home",
-})
+});
 
-const products = ref([
-    {
-        id: 1,
-        name: "Fruits",
-        description: "Papapa",
-        status: "Inactive",
-        created_at: "2025-06-20T01",
-        updated_at: "2025-06-20T01"
-    },
-    {
-        id: 2,
-        name: "Vegetables",
-        description: "Yayaya",
-        status: "Active",
-        created_at: "2025-06-20T01",
-        updated_at: "2025-06-20T01"
-    }
-])
+// const products = ref([
+//     {
+//         id: 1,
+//         name: "Fruits",
+//         description: "Papapa",
+//         status: "Inactive",
+//         created_at: "2025-06-20T01",
+//         updated_at: "2025-06-20T01"
+//     },
+//     {
+//         id: 2,
+//         name: "Vegetables",
+//         description: "Yayaya",
+//         status: "Active",
+//         created_at: "2025-06-20T01",
+//         updated_at: "2025-06-20T01"
+//     }
+// ])
+const api = "http://192.168.63.238:8000"; // API HERE
+const { data: categories, pending } = await useFetch(`${api}/categories/`);
 
-const isCategoryVisible = ref(false)
-const selectedProduct = ref(null)
+
+const isCategoryVisible = ref(false);
+const selectedCategory = ref(null);
 
 function showCategoryModal(product) {
-    selectedProduct.value = product
-    isCategoryVisible.value = true
+    selectedCategory.value = product;
+    isCategoryVisible.value = true;
 }
-const isUpdateVisible = ref(false)
-const productToUpdate = ref(null)
+const isUpdateVisible = ref(false);
+const productToUpdate = ref(null);
 
 function openUpdateModal(product) {
-    productToUpdate.value = product
-    isUpdateVisible.value = true
+    productToUpdate.value = product;
+    isUpdateVisible.value = true;
 }
-const isDeleteVisible = ref(false)
-const productToDelete = ref(null)
+const isDeleteVisible = ref(false);
+const productToDelete = ref(null);
 
 function openDeleteModal(product) {
-    productToDelete.value = product
-    isDeleteVisible.value = true
+    productToDelete.value = product;
+    isDeleteVisible.value = true;
 }
 
 function closeDeleteModal() {
-    isDeleteVisible.value = false
-    productToDelete.value = null
+    isDeleteVisible.value = false;
+    productToDelete.value = null;
 }
 
 function handleDelete() {
     // Do your deletion logic here using `productToDelete.value`
-    console.log("Deleting:", productToDelete.value)
-    closeDeleteModal()
+    console.log("Deleting:", productToDelete.value);
+    closeDeleteModal();
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr; // fallback if invalid
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 }
 
 </script>
@@ -136,8 +152,8 @@ function handleDelete() {
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                     rows="3" placeholder="Write product description here"></textarea>
                             </div>
-                            
-                            
+
+
 
                         </div>
 
@@ -200,6 +216,7 @@ function handleDelete() {
             <div class="overflow-x-auto">
                 <div class="inline-block min-w-full align-middle">
                     <div class="overflow-hidden shadow">
+                        <div v-if="pending">Loading</div>
                         <table class="min-w-full divide-y divide-gray-200 table-fixed dark:divide-gray-600">
                             <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
@@ -233,7 +250,7 @@ function handleDelete() {
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Upadated At
+                                        Updated At
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
@@ -242,49 +259,50 @@ function handleDelete() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="product in products" :key="product.id"
+                                <tr v-for="category in categories" :key="category.category_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                                    @click="showCategoryModal(product)">
+                                    @click="showCategoryModal(category)">
 
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
-                                            <input :id="`checkbox-${product.id}`" type="checkbox"
+                                            <input :id="`checkbox-${category.category_id}`" type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                                            <label :for="`checkbox-${product.id}`" class="sr-only">checkbox</label>
+                                            <label :for="`checkbox-${category.category_id}`"
+                                                class="sr-only">checkbox</label>
                                         </div>
 
                                     </td>
                                     <td
                                         class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.name }}
+                                        {{ category.category_name }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.id }}
+                                        {{ category.category_id }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
-                                        {{ product.description }}
+                                        {{ category.category_name }}
                                     </td>
 
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
-                                        <span :class="product.status === 'Inactive'
+                                        <span :class="category.category_isActive
                                             ? 'text-red-600 font-semibold'
                                             : 'text-green-600 font-semibold'">
-                                            {{ product.status }}
+                                            {{ category.category_isActive ? 'Inactive' : 'Active' }}
                                         </span>
                                     </td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
-                                        {{ product.created_at }}
+                                        {{ formatDate(category.created_at) }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
-                                        {{ product.updated_at }}
+                                        {{ formatDate(category.updated_at) }}
                                     </td>
                                     <td class="p-4 space-x-2 whitespace-nowrap">
                                         <div class="flex justify-center space-x-2">
-                                            <button type="button" @click.stop="openUpdateModal(product)"
+                                            <button type="button" @click.stop="openUpdateModal(category)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path
@@ -307,7 +325,7 @@ function handleDelete() {
 
 
                                                         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
-                                                            selectedProduct?.name }}</h2>
+                                                            selectedCategory?.category_name }}</h2>
                                                     </div>
 
 
@@ -326,7 +344,7 @@ function handleDelete() {
                                                                     Name</label>
                                                                 <div
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                    {{ selectedProduct?.name }}
+                                                                    {{ selectedCategory?.category_name }}
                                                                 </div>
 
                                                             </div>
@@ -335,7 +353,8 @@ function handleDelete() {
                                                                     Status</label>
                                                                 <div
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                    {{ selectedProduct?.status }}
+                                                                    {{ selectedCategory?.category_isActive ? 'Inactive'
+                                                                    : 'Active' }}
                                                                 </div>
                                                             </div>
 
@@ -344,18 +363,18 @@ function handleDelete() {
                                                                 <label class="block mb-1 font-medium">Category
                                                                     Description</label>
                                                                 <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.description }}</textarea>
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedCategory?.description }}</textarea>
                                                             </div>
                                                             <div>
                                                                 <label class="block mb-1 font-medium">Created at</label>
                                                                 <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.created_at }}</textarea>
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.created_at) }}</textarea>
                                                             </div>
                                                             <div>
                                                                 <label class="block mb-1 font-medium">Updated
                                                                     at</label>
                                                                 <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.updated_at }}</textarea>
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.updated_at) }}</textarea>
                                                             </div>
                                                         </div>
 
@@ -366,7 +385,7 @@ function handleDelete() {
                                                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
                                                                 product</button>
                                                             <button type="button"
-                                                                @click="isCategoryVisible = false; selectedProduct = null"
+                                                                @click="isCategoryVisible = false; selectedCategory = null"
                                                                 class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
                                                                 Cancel
                                                             </button>
@@ -379,8 +398,9 @@ function handleDelete() {
                                             </div>
 
                                             <div id="updateModal" v-if="isUpdateVisible"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                                                <div @click.stop class="bg-white p-6 rounded shadow-lg max-w-xl w-full">
+                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 ">
+                                                <div class="bg-white p-6 rounded shadow-lg max-w-xl w-full h-screen overflow-y-auto"
+                                                @click.stop>
                                                     <h2
                                                         class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                                                         Update Category</h2>
@@ -544,15 +564,6 @@ function handleDelete() {
             </div>
         </div>
     </div>
-
-
-
-
-
-
-
-
-
 
 
 </template>
