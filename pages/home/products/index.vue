@@ -94,6 +94,18 @@
         showDeleteModal.value = false;
         productToDelete.value = null;
     }
+    function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr; // fallback if invalid
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    }
 </script>
 
 <template>
@@ -221,16 +233,16 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block mb-1 font-medium">Product Unit (kg)</label>
-                            <input type="text"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="0" />
-                        </div>
-                        <div>
                             <label class="block mb-1 font-medium">Price</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="0" />
+                                placeholder="₱0.00" />
+                        </div>
+                        <div>
+                            <label class="block mb-1 font-medium">Discounted Price</label>
+                            <input type="number"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                placeholder="₱0.00" />
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Status</label>
@@ -244,7 +256,7 @@
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Location</label>
-                            <input type="number"
+                            <input type="text"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                 placeholder="Location" />
                         </div>
@@ -253,6 +265,16 @@
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                 placeholder="0" />
+                        </div>
+                        <div>
+                            <label class="block mb-1 font-medium">Posted Date</label>
+                            <input type="date"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"/>
+                        </div>
+                        <div>
+                            <label class="block mb-1 font-medium">Harvest Date</label>
+                            <input type="date"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"/>
                         </div>
                     </div>
                     <div>
@@ -339,20 +361,23 @@
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Product Name
+                                        Product ID
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Product ID
+                                        Seller ID
                                     </th>
-
+                                    <th scope="col"
+                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                        Product Name
+                                    </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
                                         Category
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Price
+                                        Current Price
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
@@ -385,11 +410,15 @@
                                     </td>
                                     <td
                                         class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.product_name }}
+                                        {{ product.product_id }}
+                                    </td>
+                                    <td
+                                        class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
+                                        {{ product.seller_id }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.product_id }}
+                                        {{ product.product_name }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
@@ -397,7 +426,7 @@
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.product_price }}
+                                        ₱{{ product.product_price }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
@@ -491,18 +520,17 @@
                                                         </div>
                                                         <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Product
-                                                                Unit(kg)</label>
+                                                                class="block text-gray-700 dark:text-gray-300">Current Price</label>
                                                             <input type="number"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                                                placeholder="3">
+                                                                placeholder="₱259.00">
                                                         </div>
                                                         <div>
                                                             <label
-                                                                class="block text-gray-700 dark:text-gray-300">Price</label>
+                                                                class="block text-gray-700 dark:text-gray-300">Discounted Price</label>
                                                             <input type="number"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                                                placeholder="259">
+                                                                placeholder="₱240.00">
                                                         </div>
                                                         <div>
                                                             <label
@@ -510,7 +538,7 @@
                                                                 Status</label>
                                                             <select
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-                                                                placeholder="Fresh">
+                                                                placeholder="Select Product Status">
                                                                 <option>Fresh</option>
                                                                 <option>Slightly Withered</option>
                                                                 <option>Withered</option>
@@ -519,7 +547,7 @@
                                                         <div>
                                                             <label
                                                                 class="block text-gray-700 dark:text-gray-300">Product
-                                                                location</label>
+                                                                Location</label>
                                                             <input type="text"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="Kabacan">
@@ -530,6 +558,20 @@
                                                             <input type="number"
                                                                 class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
                                                                 placeholder="121">
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-gray-700 dark:text-gray-300">Posted Date</label>
+                                                            <input 
+                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                                placeholder="06/20/2025">
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-gray-700 dark:text-gray-300">Harvest Date</label>
+                                                            <input 
+                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                                placeholder="06/18/2025">
                                                         </div>
                                                     </div>
 
@@ -598,7 +640,7 @@
                         <!-- Product Details Modal -->
                         <div v-if="showProductModal && !showUpdateModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 bg-gray-800/30">
-                            <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-8 relative">
+                            <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl p-8 relative h-screen overflow-y-auto">
                                 <!-- Close button -->
                                 <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
                                     @click="closeProductModal" aria-label="Close">&times;</button>
@@ -629,14 +671,14 @@
                                 </div>
                                 <!-- Brief Description -->
                                 <div class="mb-2">
-                                    <div class="font-semibold text-gray-900 mb-1">Details</div>
+                                    <div class="font-semibold text-gray-900 mb-1">Brief Description</div>
                                     <div class="text-gray-700 text-sm">
                                         {{ selectedProduct.product_brief_description || 'No brief description available.' }}
                                     </div>
                                 </div>
                                 <!-- Detailed Description -->
                                 <div class="mb-2">
-                                    <div class="font-semibold text-gray-900 mb-1">Details</div>
+                                    <div class="font-semibold text-gray-900 mb-1">Detailed Description</div>
                                     <div class="text-gray-700 text-sm">
                                         {{ selectedProduct.product_full_description || 'No detailed description available.' }}
                                     </div>
@@ -662,12 +704,16 @@
                                         </span>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="text-xs text-gray-500">Product Unit (kg)</div>
-                                        <div class="font-medium text-gray-900">3</div>
+                                        <div class="text-xs text-gray-500">On SRP?</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.is_srp }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="text-xs text-gray-500">Price</div>
-                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_price }}</div>
+                                        <div class="text-xs text-gray-500">Current Price</div>
+                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.product_price }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Discounted Price</div>
+                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.product_discountedPrice }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Location</div>
@@ -680,6 +726,46 @@
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product SKU</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.product_sku }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Posted Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.post_date) }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Harvest Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.harvest_date) }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">On Discount?</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.is_discounted }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Discounted Amount</div>
+                                        <div class="font-medium text-gray-900">₱{{ selectedProduct.discounted_amount }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Offer Start Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.offer_start_date) }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Offer End Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.offer_end_date) }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Sell Count</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.sell_count }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Review Count</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.review_count }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Created Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.created_at) }}</div>
+                                    </div>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Updated Date</div>
+                                        <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at) }}</div>
                                     </div>
                                 </div>
                                 <!-- Action Buttons -->
