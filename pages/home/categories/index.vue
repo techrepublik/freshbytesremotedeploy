@@ -399,7 +399,8 @@ function formatDate(dateStr) {
 
                                             <div id="updateModal" v-if="isUpdateVisible"
                                                 class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 ">
-                                                <div class="bg-white p-6 rounded shadow-lg max-w-xl w-full h-screen overflow-y-auto">
+                                                <div class="bg-white p-6 rounded shadow-lg max-w-xl w-full h-screen overflow-y-auto"
+                                                @click.stop>
                                                     <h2
                                                         class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                                                         Update Category</h2>

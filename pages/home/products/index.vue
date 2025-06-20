@@ -1,7 +1,7 @@
 <script setup>
-definePageMeta({
-    layout: "home",
-});
+    definePageMeta({
+        layout: "home",
+    });
 
 const api = "http://192.168.63.238:8000"; // API HERE
 const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
@@ -12,38 +12,38 @@ const loading = computed(() => pendingProducts.value || pendingCategories.value 
 
 
 
-// const products = ref([
-//     {
-//         id: 1,
-//         name: "Papaya",
-//         category: "Fruits",
-//         price: "9",
-//         stock: "123",
-//         totalSales: "₱1299.99",
-//         status: "Inactive"
-//     },
-// ]);
-// products.value.push({
-//     id: 2,
-//     name: "Banana",
-//     category: "Fruits",
-//     price: "12",
-//     stock: "50",
-//     totalSales: "₱500.00",
-//     status: "Active"
-// });
+    // const products = ref([
+    //     {
+    //         id: 1,
+    //         name: "Papaya",
+    //         category: "Fruits",
+    //         price: "9",
+    //         stock: "123",
+    //         totalSales: "₱1299.99",
+    //         status: "Inactive"
+    //     },
+    // ]);
+    // products.value.push({
+    //     id: 2,
+    //     name: "Banana",
+    //     category: "Fruits",
+    //     price: "12",
+    //     stock: "50",
+    //     totalSales: "₱500.00",
+    //     status: "Active"
+    // });
 
 
-function handleDelete() {
+    function handleDelete() {
 
-    alert("Item deleted!");
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-import { ref, computed } from 'vue';
+        alert("Item deleted!");
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+    import { ref, computed } from 'vue';
 
-// Reactive variables
-const selectedCategory = ref('');
-const selectedSubCategory = ref('');
+    // Reactive variables
+    const selectedCategory = ref('');
+    const selectedSubCategory = ref('');
 
 // Sub-category map
 const subCategories = {
@@ -107,6 +107,9 @@ function formatDate(dateStr) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+function toggleProductStatus(product) {
+    product.product_status = product.product_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 }
 </script>
 
@@ -411,7 +414,7 @@ function formatDate(dateStr) {
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                                 <tr v-for="product in products" :key="product.product_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                                    @click="openProductModal(product)">
+                                    @click.stop="openProductModal(product)">
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
                                             <input :id="`checkbox-${product.product_id}`" type="checkbox"
@@ -450,11 +453,24 @@ function formatDate(dateStr) {
                                         {{ product.sell_count }}
                                     </td>
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
-                                        <span :class="product.product_status === 'INACTIVE'
-                                            ? 'text-red-600 font-semibold'
-                                            : 'text-green-600 font-semibold'">
-                                            {{ product.product_status }}
-                                        </span>
+                                        <div class="flex items-center">
+                                            <label class="inline-flex items-center cursor-pointer" @click.stop>
+                                                <input
+                                                    type="checkbox"
+                                                    class="sr-only peer"
+                                                    :checked="product.product_status === 'ACTIVE'"
+                                                    @change.stop="toggleProductStatus(product)"
+                                                />
+                                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 dark:peer-checked:bg-green-600">
+                                                </div>
+                                                <span
+                                                    class="ml-3 text-sm font-medium"
+                                                    :class="product.product_status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'"
+                                                >
+                                                    {{ product.product_status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                                                </span>
+                                            </label>
+                                        </div>
                                     </td>
                                     <td class="p-4  space-x-2 whitespace-nowrap">
                                         <div class="flex justify-center items-center space-x-2">
@@ -646,9 +662,6 @@ function formatDate(dateStr) {
                                                 </form>
                                             </div>
                                         </div>
-
-
-
                                     </td>
                                 </tr>
                             </tbody>
@@ -702,19 +715,17 @@ function formatDate(dateStr) {
                                 </div>
                                 <!-- Info Grid -->
                                 <div class="grid grid-cols-2 gap-4 mb-4">
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Category</div>
                                         <div class="font-medium text-gray-900"> {{categories.find(cat =>
-                                            cat.category_id === selectedProduct.category_id)?.category_name || 'N/A'}}
+                                            cat.category_id === selectedProduct.category_id)?.category_name || 'N/A' }}
                                         </div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sub-category</div>
-                                        <div class="font-medium text-gray-900"> {{subcategories.find(subcat =>
-                                            subcat.sub_category_id ===
-                                            selectedProduct.sub_category_id)?.sub_category_name || 'N/A'}} </div>
+                                        <div class="font-medium text-gray-900"> {{ subcategories.find(subcat => subcat.sub_category_id === selectedProduct.sub_category_id)?.sub_category_name || 'N/A' }} </div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Status</div>
                                         <span
                                             class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-green-100 text-green-600 rounded">
@@ -724,79 +735,79 @@ function formatDate(dateStr) {
                                             Fresh
                                         </span>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">On SRP?</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.is_srp }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Current Price</div>
                                         <div class="font-medium text-gray-900">₱{{ selectedProduct.product_price }}
                                         </div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Discounted Price</div>
                                         <div class="font-medium text-gray-900">₱{{
                                             selectedProduct.product_discountedPrice }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Location</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.product_location }}
                                         </div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Quantity</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.quantity }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product SKU</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.product_sku }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Posted Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.post_date)
-                                        }}</div>
+                                            }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Harvest Date</div>
                                         <div class="font-medium text-gray-900">{{
                                             formatDate(selectedProduct.harvest_date) }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">On Discount?</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.is_discounted }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Discounted Amount</div>
                                         <div class="font-medium text-gray-900">₱{{ selectedProduct.discounted_amount }}
                                         </div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Offer Start Date</div>
                                         <div class="font-medium text-gray-900">{{
                                             formatDate(selectedProduct.offer_start_date) }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Offer End Date</div>
                                         <div class="font-medium text-gray-900">{{
                                             formatDate(selectedProduct.offer_end_date) }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sell Count</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.sell_count }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Review Count</div>
                                         <div class="font-medium text-gray-900">{{ selectedProduct.review_count }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Created Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.created_at)
                                         }}</div>
                                     </div>
-                                    <div class="bg-gray-50 rounded-lg p-3">
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Updated Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at)
-                                        }}</div>
+                                            }}</div>
                                     </div>
                                 </div>
                                 <!-- Action Buttons -->
