@@ -2,20 +2,58 @@
 definePageMeta({
     layout: "home",
 })
+
 const products = ref([
     {
         id: 1,
-        name: "Frutis",
+        name: "Fruits",
         description: "Papapa",
-        status: "Inactive"
+        status: "Inactive",
+        created_at: "2025-06-20T01",
+        updated_at: "2025-06-20T01"
     },
+    {
+        id: 2,
+        name: "Vegetables",
+        description: "Yayaya",
+        status: "Active",
+        created_at: "2025-06-20T01",
+        updated_at: "2025-06-20T01"
+    }
 ])
-products.value.push({
-    id: 2,
-    name: "Vegetables",
-    description: "Yayaya",
-    status: "Active"
-})
+
+const isCategoryVisible = ref(false)
+const selectedProduct = ref(null)
+
+function showCategoryModal(product) {
+    selectedProduct.value = product
+    isCategoryVisible.value = true
+}
+const isUpdateVisible = ref(false)
+const productToUpdate = ref(null)
+
+function openUpdateModal(product) {
+    productToUpdate.value = product
+    isUpdateVisible.value = true
+}
+const isDeleteVisible = ref(false)
+const productToDelete = ref(null)
+
+function openDeleteModal(product) {
+    productToDelete.value = product
+    isDeleteVisible.value = true
+}
+
+function closeDeleteModal() {
+    isDeleteVisible.value = false
+    productToDelete.value = null
+}
+
+function handleDelete() {
+    // Do your deletion logic here using `productToDelete.value`
+    console.log("Deleting:", productToDelete.value)
+    closeDeleteModal()
+}
 
 </script>
 
@@ -98,6 +136,9 @@ products.value.push({
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                     rows="3" placeholder="Write product description here"></textarea>
                             </div>
+                            
+                            
+
                         </div>
 
                         <div>
@@ -125,6 +166,7 @@ products.value.push({
                     </form>
                 </div>
             </div>
+
         </div>
 
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -186,6 +228,14 @@ products.value.push({
                                         Status
                                     </th>
                                     <th scope="col"
+                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                        Created At
+                                    </th>
+                                    <th scope="col"
+                                        class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                        Upadated At
+                                    </th>
+                                    <th scope="col"
                                         class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
                                         Actions
                                     </th>
@@ -193,7 +243,9 @@ products.value.push({
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                                 <tr v-for="product in products" :key="product.id"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                                    @click="showCategoryModal(product)">
+
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
                                             <input :id="`checkbox-${product.id}`" type="checkbox"
@@ -222,11 +274,17 @@ products.value.push({
                                             {{ product.status }}
                                         </span>
                                     </td>
+                                    <td
+                                        class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
+                                        {{ product.created_at }}
+                                    </td>
+                                    <td
+                                        class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
+                                        {{ product.updated_at }}
+                                    </td>
                                     <td class="p-4 space-x-2 whitespace-nowrap">
                                         <div class="flex justify-center space-x-2">
-
-                                            <button type="button"
-                                                onclick="document.getElementById('updateModal').classList.remove('hidden')"
+                                            <button type="button" @click.stop="openUpdateModal(product)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path
@@ -240,12 +298,89 @@ products.value.push({
                                             </button>
 
 
+                                            <div id="showCategory" v-if="isCategoryVisible"
+                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
 
-                                            <div id="updateModal"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
+                                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto"
+                                                    @click.stop>
+                                                    <div class="flex flex-col gap-1 mb-4">
 
-                                                <div
-                                                    class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl">
+
+                                                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
+                                                            selectedProduct?.name }}</h2>
+                                                    </div>
+
+
+                                                    <div class="flex gap-4 mb-4">
+                                                        <div
+                                                            class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
+                                                            <img src="\assets\images\logos-12-12.png" alt="Product"
+                                                                class="object-contain h-20" />
+                                                        </div>
+                                                    </div>
+
+                                                    <form class="space-y-4">
+                                                        <div class="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Category
+                                                                    Name</label>
+                                                                <div
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
+                                                                    {{ selectedProduct?.name }}
+                                                                </div>
+
+                                                            </div>
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Category
+                                                                    Status</label>
+                                                                <div
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
+                                                                    {{ selectedProduct?.status }}
+                                                                </div>
+                                                            </div>
+
+
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Category
+                                                                    Description</label>
+                                                                <textarea rows="3" disabled
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.description }}</textarea>
+                                                            </div>
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Created at</label>
+                                                                <textarea rows="3" disabled
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.created_at }}</textarea>
+                                                            </div>
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Updated
+                                                                    at</label>
+                                                                <textarea rows="3" disabled
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedProduct?.updated_at }}</textarea>
+                                                            </div>
+                                                        </div>
+
+
+
+                                                        <div class="flex justify-end space-x-2 mt-6">
+                                                            <button type="button"
+                                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
+                                                                product</button>
+                                                            <button type="button"
+                                                                @click="isCategoryVisible = false; selectedProduct = null"
+                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                                                Cancel
+                                                            </button>
+
+
+                                                        </div>
+
+                                                    </form>
+                                                </div>
+                                            </div>
+
+                                            <div id="updateModal" v-if="isUpdateVisible"
+                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                                                <div @click.stop class="bg-white p-6 rounded shadow-lg max-w-xl w-full">
                                                     <h2
                                                         class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                                                         Update Category</h2>
@@ -272,6 +407,25 @@ products.value.push({
 
                                                             </select>
                                                         </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-gray-700 dark:text-gray-300">Created
+                                                                At
+                                                            </label>
+                                                            <input type="text"
+                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                                placeholder="Created Date">
+                                                        </div>
+                                                        <div>
+                                                            <label
+                                                                class="block text-gray-700 dark:text-gray-300">Updated
+                                                                At
+                                                            </label>
+                                                            <input type="text"
+                                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                                placeholder="Updated date">
+                                                        </div>
+
 
 
                                                         <div>
@@ -303,11 +457,8 @@ products.value.push({
                                                             <button type="submit"
                                                                 class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Update
                                                                 Category</button>
-                                                            <button type="button"
-                                                                onclick="document.getElementById('updateModal').classList.add('hidden')"
-                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Cancel
-                                                            </button>
+                                                            <button @click="isUpdateVisible = false"
+                                                                class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Close</button>
                                                         </div>
                                                     </form>
                                                 </div>
@@ -315,8 +466,7 @@ products.value.push({
 
 
 
-                                            <button type="button"
-                                                onclick="document.getElementById('deleteModal').classList.remove('hidden')"
+                                            <button type="button" @click.stop="openDeleteModal(product)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path fill-rule="evenodd"
@@ -325,9 +475,10 @@ products.value.push({
                                                 </svg>
                                                 Delete category
                                             </button>
-                                            <div id="deleteModal"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
-                                                <div
+                                            <div v-if="isDeleteVisible" id="deleteModal"
+                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+
+                                                <div @click.stop
                                                     class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
                                                     <h2
                                                         class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
@@ -337,12 +488,11 @@ products.value.push({
                                                         This action cannot be undone.</p>
 
                                                     <div class="flex justify-end gap-2">
-                                                        <button
-                                                            onclick="document.getElementById('deleteModal').classList.add('hidden')"
+                                                        <button @click="isDeleteVisible = false; productToDelete = null"
                                                             class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                                                             Cancel
                                                         </button>
-                                                        <button onclick="handleDelete()"
+                                                        <button @click="isDeleteVisible = false; productToDelete = null"
                                                             class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
                                                             Yes, delete
                                                         </button>
