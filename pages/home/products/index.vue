@@ -1,92 +1,99 @@
 <script setup>
-definePageMeta({
-    layout: "home",
-})
+    definePageMeta({
+        layout: "home",
+    });
 
-const products = ref([
-    {
-        id: 1,
-        name: "Papaya",
-        category: "Fruits",
-        price: "9",
-        stock: "123",
-        totalSales: "₱1299.99",
-        status: "Inactive"
-    },
-])
-products.value.push({
-    id: 2,
-    name: "Banana",
-    category: "Fruits",
-    price: "12",
-    stock: "50",
-    totalSales: "₱500.00",
-    status: "Active"
-})
+    const api = "http://192.168.63.238:8000"; // API HERE
+    const { data: products } = await useFetch(`${api}/products/`);
+    const { data: categories } = await useFetch(`${api}/categories/`);
+    const { data: subcategories } = await useFetch(`${api}/subcategories/`);
 
 
-function handleDelete() {
 
-    alert("Item deleted!");
-    document.getElementById('deleteModal').classList.add('hidden');
-}
-import { ref, computed } from 'vue'
+    // const products = ref([
+    //     {
+    //         id: 1,
+    //         name: "Papaya",
+    //         category: "Fruits",
+    //         price: "9",
+    //         stock: "123",
+    //         totalSales: "₱1299.99",
+    //         status: "Inactive"
+    //     },
+    // ]);
+    // products.value.push({
+    //     id: 2,
+    //     name: "Banana",
+    //     category: "Fruits",
+    //     price: "12",
+    //     stock: "50",
+    //     totalSales: "₱500.00",
+    //     status: "Active"
+    // });
 
-// Reactive variables
-const selectedCategory = ref('')
-const selectedSubCategory = ref('')
 
-// Sub-category map
-const subCategories = {
-    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-    Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
-}
+    function handleDelete() {
 
-// Computed options based on selected category
-const availableSubCategories = computed(() => {
-    return subCategories[selectedCategory.value] || []
-})
+        alert("Item deleted!");
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+    import { ref, computed } from 'vue';
 
-const showAddProductModal = ref(false)
-function openAddProductModal() {
-    showAddProductModal.value = true
-}
-function closeAddProductModal() {
-    showAddProductModal.value = false
-}
+    // Reactive variables
+    const selectedCategory = ref('');
+    const selectedSubCategory = ref('');
 
-const showProductModal = ref(false)
-const selectedProduct = ref(null)
+    // Sub-category map
+    const subCategories = {
+        Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
+        Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
+    };
 
-function openProductModal(product) {
-    selectedProduct.value = product
-    showProductModal.value = true
-}
-function closeProductModal() {
-    showProductModal.value = false
-    selectedProduct.value = null
-}
+    // Computed options based on selected category
+    const availableSubCategories = computed(() => {
+        return subCategories[selectedCategory.value] || [];
+    });
 
-const showUpdateModal = ref(false)
+    const showAddProductModal = ref(false);
+    function openAddProductModal() {
+        showAddProductModal.value = true;
+    }
+    function closeAddProductModal() {
+        showAddProductModal.value = false;
+    }
 
-function openUpdateModal() {
-    showUpdateModal.value = true
-}
-function closeUpdateModal() {
-    showUpdateModal.value = false
-}
+    const showProductModal = ref(false);
+    const selectedProduct = ref(null);
 
-const showDeleteModal = ref(false)
-const productToDelete = ref(null)
+    function openProductModal(product) {
+        selectedProduct.value = product;
+        showProductModal.value = true;
+    }
+    function closeProductModal() {
+        showProductModal.value = false;
+        selectedProduct.value = null;
+    }
 
-function openDeleteModal(product) {
-    productToDelete.value = product
-    showDeleteModal.value = true
-}
-function closeDeleteModal() {
-    showDeleteModal.value = false
-    productToDelete.value = null
-}
+    const showUpdateModal = ref(false);
+
+    function openUpdateModal() {
+        showUpdateModal.value = true;
+    }
+    function closeUpdateModal() {
+        showUpdateModal.value = false;
+    }
+
+    const showDeleteModal = ref(false);
+    const productToDelete = ref(null);
+
+    function openDeleteModal(product) {
+        productToDelete.value = product;
+        showDeleteModal.value = true;
+    }
+    function closeDeleteModal() {
+        showDeleteModal.value = false;
+        productToDelete.value = null;
+    }
 </script>
 
 <template>
@@ -125,8 +132,8 @@ function closeDeleteModal() {
                 <span
                     class="inline-flex items-center px-2 py-0.5 mb-2 text-xs font-medium text-green-800 bg-green-100 rounded dark:bg-green-900 dark:text-green-200">↑
                     0%</span>
-                <h5 class="mt-0.8 text-3xl font-bold text-gray-900 dark:text-white">2</h5>
-                <p class="mt-2 text-gray-500 dark:text-gray-400">Total stocks</p>
+                <h5 class="mt-0.8 text-3xl font-bold text-gray-900 dark:text-white">{{ products.length }}</h5>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">Total Products</p>
             </a>
 
             <a href="#"
@@ -172,7 +179,7 @@ function closeDeleteModal() {
                 </button>
             </div>
         </div>
-        <!-- Product Modal -->
+        <!-- Add Product Modal -->
         <div v-if="showAddProductModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
             <div
                 class="bg-white text-gray-900 rounded-lg shadow-lg w-full max-w-2xl p-8 relative h-screen overflow-y-auto">
@@ -366,45 +373,45 @@ function closeDeleteModal() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="product in products" :key="product.id"
+                                <tr v-for="product in products" :key="product.product_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                                     @click="openProductModal(product)">
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
-                                            <input :id="`checkbox-${product.id}`" type="checkbox"
+                                            <input :id="`checkbox-${product.product_id}`" type="checkbox"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                                            <label :for="`checkbox-${product.id}`" class="sr-only">checkbox</label>
+                                            <label :for="`checkbox-${product.product_id}`" class="sr-only">checkbox</label>
                                         </div>
                                     </td>
                                     <td
                                         class="p-4 text-sm font-semibold text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.name }}
+                                        {{ product.product_name }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.id }}
+                                        {{ product.product_id }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.category }}
+                                        {{ categories.find(cat => cat.category_id === product.category_id)?.category_name || 'N/A' }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.price }}
+                                        {{ product.product_price }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-normal text-gray-900 whitespace-nowrap dark:text-gray-400">
-                                        {{ product.stock }}
+                                        {{ product.quantity }}
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{ product.totalSales }}
+                                        {{ product.sell_count }}
                                     </td>
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
-                                        <span :class="product.status === 'Inactive'
+                                        <span :class="product.product_status === 'INACTIVE'
                                             ? 'text-red-600 font-semibold'
                                             : 'text-green-600 font-semibold'">
-                                            {{ product.status }}
+                                            {{ product.product_status }}
                                         </span>
                                     </td>
                                     <td class="p-4  space-x-2 whitespace-nowrap">
@@ -430,6 +437,7 @@ function closeDeleteModal() {
                                                         clip-rule="evenodd" />
                                                 </svg>
                                                 Delete item
+
                                             </button>
                                         </div>
 
@@ -596,9 +604,9 @@ function closeDeleteModal() {
                                     @click="closeProductModal" aria-label="Close">&times;</button>
                                 <!-- Product Title and Price -->
                                 <div class="flex flex-col gap-1 mb-4">
-                                    <h2 class="text-2xl font-bold text-gray-900">{{ selectedProduct.name }}</h2>
-                                    <span class="text-xl font-semibold text-gray-700">₱{{ selectedProduct.price
-                                    }}</span>
+                                    <h2 class="text-2xl font-bold text-gray-900">{{ selectedProduct.product_name }}</h2>
+                                    <span class="text-xl font-semibold text-gray-700">₱{{ selectedProduct.product_price
+                                        }}</span>
                                 </div>
                                 <!-- Images (placeholder) -->
                                 <div class="flex gap-4 mb-4">
@@ -623,27 +631,25 @@ function closeDeleteModal() {
                                 <div class="mb-2">
                                     <div class="font-semibold text-gray-900 mb-1">Details</div>
                                     <div class="text-gray-700 text-sm">
-                                        Papaya
+                                        {{ selectedProduct.product_brief_description || 'No brief description available.' }}
                                     </div>
                                 </div>
                                 <!-- Detailed Description -->
                                 <div class="mb-2">
                                     <div class="font-semibold text-gray-900 mb-1">Details</div>
                                     <div class="text-gray-700 text-sm">
-                                        Papaya Papaya Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eveniet,
-                                        sint nulla a aliquam enim recusandae dolorum sed eaque minus perspiciatis hic
-                                        tempore cum voluptatibus in neque. Accusantium minus voluptatum saepe!
+                                        {{ selectedProduct.product_full_description || 'No detailed description available.' }}
                                     </div>
                                 </div>
                                 <!-- Info Grid -->
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Category</div>
-                                        <div class="font-medium text-gray-900">Fruits</div>
+                                        <div class="font-medium text-gray-900"> {{ categories.find(cat => cat.category_id === selectedProduct.category_id)?.category_name || 'N/A' }} </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sub-category</div>
-                                        <div class="font-medium text-gray-900">Citrus</div>
+                                        <div class="font-medium text-gray-900"> {{ subcategories.find(subcat => subcat.sub_category_id === selectedProduct.sub_category_id)?.sub_category_name || 'N/A' }} </div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Status</div>
@@ -660,20 +666,20 @@ function closeDeleteModal() {
                                         <div class="font-medium text-gray-900">3</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
-                                        <div class="text-xs text-gray-500">Prize</div>
-                                        <div class="font-medium text-gray-900">₱259.00</div>
+                                        <div class="text-xs text-gray-500">Price</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_price }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Location</div>
-                                        <div class="font-medium text-gray-900">Kabacan</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_location }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Quantity</div>
-                                        <div class="font-medium text-gray-900">123</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.quantity }}</div>
                                     </div>
                                     <div class="bg-gray-50 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product SKU</div>
-                                        <div class="font-medium text-gray-900">#0001</div>
+                                        <div class="font-medium text-gray-900">{{ selectedProduct.product_sku }}</div>
                                     </div>
                                 </div>
                                 <!-- Action Buttons -->
