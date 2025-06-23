@@ -3,9 +3,12 @@
     layout: 'home',
     })
 
-    const api = process.env.API_LINK
+    const config = useRuntimeConfig()
+    const api = config.public.API_LINK
+    console.log(api);
+    
 
-    const { data: products } = await useFetch("http://192.168.157.238:8000/products/")
+    const { data: products } = await useFetch(`${api}/products/`)
 </script>
 
 <template>
