@@ -3,7 +3,8 @@ definePageMeta({
     layout: "home",
 });
 
-const api = "http://192.168.63.238:8000"; // API HERE
+const config = useRuntimeConfig()
+const api = config.public.API_LINK;
 const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
 const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
 const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
@@ -63,7 +64,7 @@ const newProduct = ref({
 async function toggleProductActive(product) {
   product.is_active = !product.is_active;
   try {
-    await $fetch(`${api}/products/${product.product_id}`, {
+    await $fetch(`${api}/products/${product.product_id}/`, {
       method: 'PATCH',
       body: { is_active: product.is_active }
     });
