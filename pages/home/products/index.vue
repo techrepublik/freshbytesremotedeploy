@@ -56,18 +56,38 @@ async function toggleProductActive(product) {
   }
 }
 
-async function addProduct() {
-  // Validate required fields
+const { data: users } = useFetch(`${api}/users/`, { server: false });
+const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
+
+
+    async function addProduct() {
+    // Validate required fields
     if (
-    !newProduct.value.product_name ||
-    !newProduct.value.category_id ||
-    !newProduct.value.product_price ||
-    !newProduct.value.product_status ||
-    !newProduct.value.quantity
+        !newProduct.value.product_name ||
+        !newProduct.value.category_id ||
+        !newProduct.value.product_price ||
+        !newProduct.value.product_status ||
+        !newProduct.value.quantity ||
+        !newProduct.value.seller_id
     ) {
-    alert('Please fill all required fields.');
-    return;
+        alert('Please fill all required fields.');
+        return;
     }
+
+    // Ensure required backend fields are set and valid
+    if (!newProduct.value.product_sku || newProduct.value.product_sku === '') {
+        newProduct.value.product_sku = `SKU-${Date.now()}`;
+    }
+    if (!newProduct.value.product_status || newProduct.value.product_status === '') {
+        newProduct.value.product_status = 'FRESH'; // or your default status
+    }
+    if (typeof newProduct.value.review_count !== 'number' || isNaN(newProduct.value.review_count)) {
+        newProduct.value.review_count = 0;
+    }
+    if (typeof newProduct.value.sell_count !== 'number' || isNaN(newProduct.value.sell_count)) {
+        newProduct.value.sell_count = 0;
+    }
+
     try {
         await $fetch(`${api}/products/`, {
         method: 'POST',
@@ -79,8 +99,8 @@ async function addProduct() {
     } catch (error) {
         alert('Failed to add product.');
         console.error('API error:', error.data || error);
-    } 
-}
+    }
+    }
 
     function handleDelete() {
 
@@ -109,7 +129,20 @@ async function addProduct() {
         showAddProductModal.value = true;
     }
     function closeAddProductModal() {
-        showAddProductModal.value = false;
+    showAddProductModal.value = false;
+    // Reset all fields in newProduct
+    Object.keys(newProduct.value).forEach(key => {
+        // Set booleans to false, numbers to null, strings to empty string
+        if (typeof newProduct.value[key] === 'boolean') {
+            newProduct.value[key] = false;
+        } else if (typeof newProduct.value[key] === 'number') {
+            newProduct.value[key] = null;
+        } else {
+            newProduct.value[key] = '';
+        }
+    });
+    // Set is_active to true by default if needed
+    newProduct.value.is_active = true;
     }
 
     const showProductModal = ref(false);
@@ -298,91 +331,99 @@ async function addProduct() {
                 <form class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
+                            <label class="block mb-1 font-medium">Seller Name</label>
+                            <select
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.seller_id" required>
+                                <option disabled value="">Select seller</option>
+                                <option
+                                    v-for="seller in sellers"
+                                    :key="seller.seller_id"
+                                    :value="seller.seller_id"
+                                >
+                                    {{ users.find(u => u.user_id === seller.user_id)?.user_name || 'Unknown' }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block mb-1 font-medium">Product Name</label>
                             <input type="text"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="Type product name" />
+                                placeholder="Type product name" v-model="newProduct.product_name"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Category</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select category</option>
-                                <option>Fruits</option>
-                                <option>Vegetables</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.category_id">
+                                <option disabled value="">Select category</option>
+                                <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
+                                    {{ cat.category_name }}
+                                </option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Sub-Category</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select sub-category</option>
-                                <option>Citrus</option>
-                                <option>Berries</option>
-                                <option>Tropical</option>
-                                <option>Stone Fruits</option>
-                                <option>Melons</option>
-                                <option>Vegetables</option>
-                                <option>Root Vegetable</option>
-                                <option>Leafy Greens</option>
-                                <option>Cruciferous Vegetables</option>
-                                <option>Nightshades</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.sub_category_id">
+                                <option disabled value="">Select sub-category</option>
+                                <option v-for="sub in subcategories" :key="sub.sub_category_id" :value="sub.sub_category_id">
+                                    {{ sub.sub_category_name }}
+                                </option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Price</label>
                             <input type="number"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="₱0.00" />
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" 
+                                placeholder="₱0.00" v-model="newProduct.product_price"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Discounted Price</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="₱0.00" />
+                                placeholder="₱0.00" v-model="newProduct.product_discountedPrice"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Status</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select Product Status</option>
-                                <option>Fresh</option>
-                                <option>Slightly Withered</option>
-                                <option>Withered</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.product_status" required>
+                                <option disabled value="">Select status</option>
+                                <option value="FRESH">Fresh</option>
+                                <option value="slightly_withered">Slightly Withered</option>
+                                <option value="withered">Withered</option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Location</label>
                             <input type="text"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="Location" />
+                                placeholder="Type your Product Location" v-model="newProduct.product_location"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Quantity</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="0" />
+                                placeholder="0" v-model="newProduct.quantity"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Posted Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.post_date"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Harvest Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.harvest_date"/>
                         </div>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Brief Description</label>
                         <textarea class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            rows="3" placeholder="Write product description here"></textarea>
+                            rows="3" placeholder="Write product description here" v-model="newProduct.product_brief_description"></textarea>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Detailed Description</label>
                         <textarea class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            rows="3" placeholder="Write product description here"></textarea>
+                            rows="3" placeholder="Write product description here" v-model="newProduct.product_full_description"></textarea>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Product Images</label>
@@ -397,7 +438,7 @@ async function addProduct() {
                         </div>
                     </div>
                     <div class="flex justify-end space-x-2 mt-6">
-                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
+                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" @click="addProduct">Add
                             product</button>
                         <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
                             @click="closeAddProductModal">Cancel</button>
@@ -410,16 +451,16 @@ async function addProduct() {
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
                 <input type="text" placeholder="Search"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
                 <select v-model="selectedCategory"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option value="">Select Category</option>
                     <option value="Fruits">Fruits</option>
                     <option value="Vegetables">Vegetables</option>
                 </select>
 
                 <select v-model="selectedSubCategory"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     :disabled="!selectedCategory">
                     <option value="">Select Sub-Category</option>
                     <option v-for="(sub, index) in availableSubCategories" :key="index" :value="sub">
@@ -427,13 +468,13 @@ async function addProduct() {
                     </option>
                 </select>
                 <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option>Price</option>
                     <option>Low to High</option>
                     <option>High to Low</option>
                 </select>
                 <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
                     <option>Status</option>
                     <option>Inactive</option>
                     <option>Active</option>
@@ -442,15 +483,19 @@ async function addProduct() {
                 </select>
             </div>
             <div class="flex items-center space-x-2 mt-2">
-            <button
-                class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
-                :disabled="!products?.some(p => p.selected)"
-                @click="showDeleteSelectedModal = true"
-            >
-                <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">S
-                </svg>
-                Delete Selected
-            </button>
+                <button
+                    class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
+                    :disabled="!products?.some(p => p.selected)" @click="showDeleteSelectedModal = true">
+                    <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    </svg>
+                    <span v-if="products && products.length && products.every(p => p.selected)">
+                        Delete all items
+                    </span>
+                    <span v-else>
+                        Delete {{products?.filter(p => p.selected).length}} item<span
+                            v-if="products?.filter(p => p.selected).length > 1">s</span>
+                    </span>
+                </button>
             </div>
         </div>
         <div class="flex flex-col">
@@ -535,7 +580,7 @@ async function addProduct() {
                                     </td>
                                     <td
                                         class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        {{categories.find(cat => cat.category_id ===
+                                        {{categories?.find(cat => cat.category_id ===
                                             product.category_id)?.category_name || 'N/A'}}
                                     </td>
                                     <td
@@ -553,19 +598,16 @@ async function addProduct() {
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
                                         <div class="flex items-center">
                                             <label class="inline-flex items-center cursor-pointer" @click.stop>
-                                                <input
-                                                    type="checkbox"
-                                                    class="sr-only peer"
-                                                    :checked="product.product_status === 'ACTIVE'"
-                                                    @change.stop="toggleProductStatus(product)"
-                                                />
+                                                <input type="checkbox" class="sr-only peer"
+                                                    :checked="product.is_active"
+                                                    @change.stop="toggleProductActive(product)" />
                                                 <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 dark:peer-checked:bg-green-600">
                                                 </div>
                                                 <span
                                                     class="ml-3 text-sm font-medium"
-                                                    :class="product.product_status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'"
+                                                    :class="product.is_active ? 'text-green-600' : 'text-red-600'"
                                                 >
-                                                    {{ product.product_status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                                                    {{ product.is_active ? 'Active' : 'Inactive' }}
                                                 </span>
                                             </label>
                                         </div>
@@ -764,6 +806,28 @@ async function addProduct() {
                                 </tr>
                             </tbody>
                         </table>
+                        <div v-if="showDeleteModal"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
+                                </h2>
+                                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                                    Are you sure you want to delete
+                                    <span class="font-bold text-red-600">{{ productToDelete?.product_name }}</span>?
+                                    <br>This action cannot be undone.
+                                </p>
+                                <div class="flex justify-end gap-2">
+                                    <button @click="closeDeleteModal"
+                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                        Cancel
+                                    </button>
+                                    <button @click="deleteSingleProduct"
+                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                        Yes, delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Product Details Modal -->
                         <div v-if="showProductModal && !showUpdateModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 bg-gray-800/30">
@@ -814,8 +878,23 @@ async function addProduct() {
                                 <!-- Info Grid -->
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Product ID</div>
+                                        <div class="font-medium text-gray-900"> {{ selectedProduct.product_id || 'N/A' }}
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Seller ID</div>
+                                        <div class="font-medium text-gray-900"> {{ selectedProduct.seller_id || 'N/A' }}
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
+                                        <div class="text-xs text-gray-500">Seller Name</div>
+                                        <div class="font-medium text-gray-900"> {{ users.find(u => u.user_id === (sellers.find(s => s.seller_id === selectedProduct.seller_id)?.user_id))?.user_name || 'N/A' }}
+                                        </div>
+                                    </div>
+                                    <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Category</div>
-                                        <div class="font-medium text-gray-900"> {{categories.find(cat =>
+                                        <div class="font-medium text-gray-900"> {{categories?.find(cat =>
                                             cat.category_id === selectedProduct.category_id)?.category_name || 'N/A' }}
                                         </div>
                                     </div>
@@ -934,21 +1013,31 @@ async function addProduct() {
                                 </div>
                             </div>
                         </div>
-                        <div v-if="showDeleteModal"
+                        <!-- Delete Selected Modal -->
+                        <div v-if="showDeleteSelectedModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
                             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
                                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
                                 </h2>
-                                <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this
-                                    item?<br>
-                                    This action cannot be undone.</p>
-
+                                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                                    <span v-if="products && products.length && products.every(p => p.selected)">
+                                        Are you sure you want to delete <span class="font-bold text-red-600">all
+                                            items</span>?
+                                    </span>
+                                    <span v-else>
+                                        Are you sure you want to delete
+                                        <span class="font-bold text-red-600">{{products?.filter(p => p.selected).length
+                                            }}</span>
+                                        item<span v-if="products?.filter(p => p.selected).length > 1">s</span>?
+                                    </span>
+                                    <br>This action cannot be undone.
+                                </p>
                                 <div class="flex justify-end gap-2">
-                                    <button @click="closeDeleteModal"
+                                    <button @click="showDeleteSelectedModal = false"
                                         class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                                         Cancel
                                     </button>
-                                    <button @click="handleDelete"
+                                    <button @click="deleteSelectedProducts"
                                         class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
                                         Yes, delete
                                     </button>
