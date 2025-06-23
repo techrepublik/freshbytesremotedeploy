@@ -20,7 +20,7 @@ definePageMeta({
 //     sub_created_at: "2023",
 //     sub_updated_at: "2034"
 // })
-const api = "http://192.168.63.238:8000"; // API HERE
+const api = "http://192.168.157.238:8000"; // API HERE
 const { data: subcategories, pending } = await useFetch(`${api}/subcategories/`);
 
 import { ref, computed } from 'vue'

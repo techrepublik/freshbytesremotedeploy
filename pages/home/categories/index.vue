@@ -21,7 +21,7 @@ definePageMeta({
 //         updated_at: "2025-06-20T01"
 //     }
 // ])
-const api = "http://192.168.63.238:8000"; // API HERE
+const api = "http://192.168.157.238:8000"; // API HERE
 const { data: categories, pending } = await useFetch(`${api}/categories/`);
 
 

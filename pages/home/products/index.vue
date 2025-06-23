@@ -3,7 +3,7 @@
         layout: "home",
     });
 
-const api = "http://192.168.63.238:8000"; // API HERE
+const api = "http://192.168.157.238:8000"; // API HERE
 const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
 const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
 const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
@@ -145,6 +145,13 @@ function deleteSelectedProducts() {
   products.value = products.value.filter(p => !p.selected)
   allSelected.value = false
   showDeleteSelectedModal.value = false
+}
+
+function deleteSingleProduct() {
+  if (productToDelete.value && products.value) {
+    products.value = products.value.filter(p => p.product_id !== productToDelete.value.product_id)
+  }
+  closeDeleteModal()
 }
 </script>
 
@@ -394,14 +401,19 @@ function deleteSelectedProducts() {
                 </select>
             </div>
             <div class="flex items-center space-x-2 mt-2">
-            <button
+              <button
                 class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
                 :disabled="!products?.some(p => p.selected)"
                 @click="showDeleteSelectedModal = true"
             >
-                <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">S
+                <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 </svg>
-                Delete Selected
+                <span v-if="products && products.length && products.every(p => p.selected)">
+                Delete all items
+                </span>
+                <span v-else>
+                Delete {{ products.filter(p => p.selected).length }} item<span v-if="products.filter(p => p.selected).length > 1">s</span>
+                </span>
             </button>
             </div>
         </div>
@@ -716,6 +728,26 @@ function deleteSelectedProducts() {
                                 </tr>
                             </tbody>
                         </table>
+                        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion</h2>
+                            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                            Are you sure you want to delete
+                            <span class="font-bold text-red-600">{{ productToDelete?.product_name }}</span>?
+                            <br>This action cannot be undone.
+                            </p>
+                            <div class="flex justify-end gap-2">
+                            <button @click="closeDeleteModal"
+                                class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                            <button @click="deleteSingleProduct"
+                                class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                Yes, delete
+                            </button>
+                            </div>
+                        </div>
+                        </div>
                         <!-- Product Details Modal -->
                         <div v-if="showProductModal && !showUpdateModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-opacity-30 bg-gray-800/30">
@@ -886,26 +918,32 @@ function deleteSelectedProducts() {
                                 </div>
                             </div>
                         </div>
-                        <div v-if="showDeleteModal"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
-                                </h2>
-                                <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you want to delete this
-                                    item?<br>
-                                    This action cannot be undone.</p>
-
-                                <div class="flex justify-end gap-2">
-                                    <button @click="closeDeleteModal"
-                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                        Cancel
-                                    </button>
-                                    <button @click="handleDelete"
-                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                                        Yes, delete
-                                    </button>
-                                </div>
+                        <!-- Delete Selected Modal -->
+                        <div v-if="showDeleteSelectedModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion</h2>
+                            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                            <span v-if="products && products.length && products.every(p => p.selected)">
+                                Are you sure you want to delete <span class="font-bold text-red-600">all items</span>?
+                            </span>
+                            <span v-else>
+                                Are you sure you want to delete
+                                <span class="font-bold text-red-600">{{ products.filter(p => p.selected).length }}</span>
+                                item<span v-if="products.filter(p => p.selected).length > 1">s</span>?
+                            </span>
+                            <br>This action cannot be undone.
+                            </p>
+                            <div class="flex justify-end gap-2">
+                            <button @click="showDeleteSelectedModal = false"
+                                class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                            <button @click="deleteSelectedProducts"
+                                class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                Yes, delete
+                            </button>
                             </div>
+                        </div>
                         </div>
                         <!-- Divider -->
                         <hr class="my-4 border-gray-200 dark:border-gray-700">

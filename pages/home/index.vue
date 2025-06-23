@@ -5,7 +5,7 @@
 
     const api = process.env.API_LINK
 
-    const { data: products } = await useFetch("http://192.168.63.238:8000/products/")
+    const { data: products } = await useFetch("http://192.168.157.238:8000/products/")
 </script>
 
 <template>
