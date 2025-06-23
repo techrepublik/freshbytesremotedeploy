@@ -1,7 +1,7 @@
 <script setup>
-    definePageMeta({
-        layout: "home",
-    });
+definePageMeta({
+    layout: "home",
+});
 
 const api = "http://192.168.157.238:8000"; // API HERE
 const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
@@ -12,38 +12,106 @@ const loading = computed(() => pendingProducts.value || pendingCategories.value 
 
 
 
-    // const products = ref([
-    //     {
-    //         id: 1,
-    //         name: "Papaya",
-    //         category: "Fruits",
-    //         price: "9",
-    //         stock: "123",
-    //         totalSales: "₱1299.99",
-    //         status: "Inactive"
-    //     },
-    // ]);
-    // products.value.push({
-    //     id: 2,
-    //     name: "Banana",
-    //     category: "Fruits",
-    //     price: "12",
-    //     stock: "50",
-    //     totalSales: "₱500.00",
-    //     status: "Active"
-    // });
+// const products = ref([
+//     {
+//         id: 1,
+//         name: "Papaya",
+//         category: "Fruits",
+//         price: "9",
+//         stock: "123",
+//         totalSales: "₱1299.99",
+//         status: "Inactive"
+//     },
+// ]);
+// products.value.push({
+//     id: 2,
+//     name: "Banana",
+//     category: "Fruits",
+//     price: "12",
+//     stock: "50",
+//     totalSales: "₱500.00",
+//     status: "Active"
+// });
 
+const newProduct = ref({
+    seller_id: null,
+    product_name: "",
+    product_price: null,
+    product_brief_description: "",
+    product_full_description: "",
+    product_discountedPrice: null,
+    product_sku: "",
+    product_status: null,
+    product_location: "",
+    category_id: null,
+    sub_category_id: null,
+    quantity: null,
+    post_date: null,
+    harvest_date: null,
+    is_active: true, 
+    review_count: null,
+    top_rated: false,
+    is_discounted: false,
+    is_srp: false,
+    is_deleted: false,
+    sell_count: null,
+    offer_start_date: null,
+    offer_end_date: null,
+    has_promo: false
+});
 
-    function handleDelete() {
+async function toggleProductActive(product) {
+  product.is_active = !product.is_active;
+  try {
+    await $fetch(`${api}/products/${product.product_id}`, {
+      method: 'PATCH',
+      body: { is_active: product.is_active }
+    });
+    // Optionally, show a success message here
+  } catch (error) {
+    // If the API fails, revert the change
+    product.is_active = !product.is_active;
+    alert('Failed to update product display status.');
+    console.error(error);
+  }
+}
+ 
+async function addProduct() {
+  // Validate required fields
+  if (
+    !newProduct.value.product_name ||
+    !newProduct.value.category_id ||
+    !newProduct.value.product_price ||
+    !newProduct.value.product_status ||
+    !newProduct.value.quantity
+  ) {
+    alert('Please fill all required fields.');
+    return;
+  }
+  try {
+    await $fetch(`${api}/products/`, {
+      method: 'POST',
+      body: newProduct.value,
+    });
+    await refreshNuxtData();
+    closeAddProductModal();
+    Object.keys(newProduct.value).forEach(key => newProduct.value[key] = null);
+  } catch (error) {
+    alert('Failed to add product.');
+    console.error('API error:', error.data || error);
+  }
+}
 
-        alert("Item deleted!");
-        document.getElementById('deleteModal').classList.add('hidden');
-    }
-    import { ref, computed } from 'vue';
+function handleDelete() {
 
-    // Reactive variables
-    const selectedCategory = ref('');
-    const selectedSubCategory = ref('');
+    alert("Item deleted!");
+    document.getElementById('deleteModal').classList.add('hidden');
+}
+import { ref, computed } from 'vue';
+
+// Reactive variables
+const selectedCategory = ref('');
+const selectedSubCategory = ref('');
 
 // Sub-category map
 const subCategories = {
@@ -114,52 +182,60 @@ function toggleProductStatus(product) {
 
 const allSelected = ref(false)
 watch(products, (newProducts) => {
-  if (newProducts) {
-    newProducts.forEach(product => {
-      if (product.selected === undefined) product.selected = false
-    })
-  }
+    if (newProducts) {
+        newProducts.forEach(product => {
+            if (product.selected === undefined) product.selected = false
+        })
+    }
 }, { immediate: true })
 
 watch(
-  () => products.value && products.value.map(p => p.selected),
-  (selections) => {
-    if (products.value && products.value.length) {
-      allSelected.value = products.value.every(p => p.selected)
+    () => products.value && products.value.map(p => p.selected),
+    (selections) => {
+        if (products.value && products.value.length) {
+            allSelected.value = products.value.every(p => p.selected)
+        }
     }
-  }
 )
 
 function toggleAllSelection() {
-  if (products.value) {
-    products.value.forEach(product => {
-      product.selected = allSelected.value
-    })
-  }
+    if (products.value) {
+        products.value.forEach(product => {
+            product.selected = allSelected.value
+        })
+    }
 }
 const showDeleteSelectedModal = ref(false)
 
 function deleteSelectedProducts() {
-  const count = products.value.filter(p => p.selected).length
-  if (count === 0) return
-  products.value = products.value.filter(p => !p.selected)
-  allSelected.value = false
-  showDeleteSelectedModal.value = false
+    const count = products.value.filter(p => p.selected).length
+    if (count === 0) return
+    products.value = products.value.filter(p => !p.selected)
+    allSelected.value = false
+    showDeleteSelectedModal.value = false
 }
 
 function deleteSingleProduct() {
-  if (productToDelete.value && products.value) {
-    products.value = products.value.filter(p => p.product_id !== productToDelete.value.product_id)
-  }
-  closeDeleteModal()
+    if (productToDelete.value && products.value) {
+        products.value = products.value.filter(p => p.product_id !== productToDelete.value.product_id)
+    }
+    closeDeleteModal()
 }
 </script>
 
 <template>
     <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="loading">
-        
+
         <div role="status">
-            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg>
+            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                    fill="currentColor" />
+                <path
+                    d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                    fill="currentFill" />
+            </svg>
             <span class="sr-only">Loading...</span>
         </div>
 
@@ -257,91 +333,95 @@ function deleteSingleProduct() {
                 <form class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
+                            <label class="block mb-1 font-medium">Seller ID</label>
+                            <select
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.seller_id">
+                                <option disabled value="">Select seller</option>
+                                <option v-for="seller in sellers" :key="seller.id" :value="seller.id">
+                                    {{ seller.name }}
+                                </option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block mb-1 font-medium">Product Name</label>
                             <input type="text"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="Type product name" />
+                                placeholder="Type product name" v-model="newProduct.product_name" />
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Category</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select category</option>
-                                <option>Fruits</option>
-                                <option>Vegetables</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.category_id">
+                                <option disabled value="">Select category</option>
+                                <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
+                                    {{ cat.category_name }}
+                                </option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Sub-Category</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select sub-category</option>
-                                <option>Citrus</option>
-                                <option>Berries</option>
-                                <option>Tropical</option>
-                                <option>Stone Fruits</option>
-                                <option>Melons</option>
-                                <option>Vegetables</option>
-                                <option>Root Vegetable</option>
-                                <option>Leafy Greens</option>
-                                <option>Cruciferous Vegetables</option>
-                                <option>Nightshades</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.sub_category_id">
+                                <option disabled value="">Select sub-category</option>
+                                <option v-for="sub in subcategories" :key="sub.sub_category_id" :value="sub.sub_category_id">
+                                    {{ sub.sub_category_name }}
+                                </option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Price</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="₱0.00" />
+                                placeholder="₱0.00" v-model="newProduct.product_price"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Discounted Price</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="₱0.00" />
+                                placeholder="₱0.00" v-model="newProduct.product_discountedPrice"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Status</label>
                             <select
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                <option>Select Product Status</option>
-                                <option>Fresh</option>
-                                <option>Slightly Withered</option>
-                                <option>Withered</option>
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.product_status">
+                                <option disabled value="">Select status</option>
+                                <option value="fresh">Fresh</option>
+                                <option value="slightly_withered">Slightly Withered</option>
+                                <option value="withered">Withered</option>
                             </select>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Product Location</label>
                             <input type="text"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="Location" />
+                                placeholder="Location" v-model="newProduct.product_location"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Quantity</label>
                             <input type="number"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                placeholder="0" />
+                                placeholder="0" v-model="newProduct.quantity"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Posted Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.post_date"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Harvest Date</label>
                             <input type="date"
-                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" />
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.harvest_date"/>
                         </div>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Brief Description</label>
                         <textarea class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            rows="3" placeholder="Write product description here"></textarea>
+                            rows="3" placeholder="Write product description here" v-model="newProduct.product_brief_description"></textarea>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Detailed Description</label>
                         <textarea class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            rows="3" placeholder="Write product description here"></textarea>
+                            rows="3" placeholder="Write product description here" v-model="newProduct.product_full_description"></textarea>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Product Images</label>
@@ -356,7 +436,7 @@ function deleteSingleProduct() {
                         </div>
                     </div>
                     <div class="flex justify-end space-x-2 mt-6">
-                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
+                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" @click="addProduct">Add
                             product</button>
                         <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
                             @click="closeAddProductModal">Cancel</button>
@@ -401,20 +481,19 @@ function deleteSingleProduct() {
                 </select>
             </div>
             <div class="flex items-center space-x-2 mt-2">
-              <button
-                class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
-                :disabled="!products?.some(p => p.selected)"
-                @click="showDeleteSelectedModal = true"
-            >
-                <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                </svg>
-                <span v-if="products && products.length && products.every(p => p.selected)">
-                Delete all items
-                </span>
-                <span v-else>
-                Delete {{ products.filter(p => p.selected).length }} item<span v-if="products.filter(p => p.selected).length > 1">s</span>
-                </span>
-            </button>
+                <button
+                    class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
+                    :disabled="!products?.some(p => p.selected)" @click="showDeleteSelectedModal = true">
+                    <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    </svg>
+                    <span v-if="products && products.length && products.every(p => p.selected)">
+                        Delete all items
+                    </span>
+                    <span v-else>
+                        Delete {{products.filter(p => p.selected).length}} item<span
+                            v-if="products.filter(p => p.selected).length > 1">s</span>
+                    </span>
+                </button>
             </div>
         </div>
         <div class="flex flex-col">
@@ -426,7 +505,8 @@ function deleteSingleProduct() {
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
-                                            <input id="checkbox-all" type="checkbox" v-model="allSelected" @change="toggleAllSelection"
+                                            <input id="checkbox-all" type="checkbox" v-model="allSelected"
+                                                @change="toggleAllSelection"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
                                         </div>
@@ -475,12 +555,9 @@ function deleteSingleProduct() {
                                     @click.stop="openProductModal(product)">
                                     <td class="w-4 p-4">
                                         <div class="flex items-center" @click.stop>
-                                            <input
-                                            :id="`checkbox-${product.product_id}`"
-                                            type="checkbox"
-                                            class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
-                                            v-model="product.selected"
-                                            />
+                                            <input :id="`checkbox-${product.product_id}`" type="checkbox"
+                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                                                v-model="product.selected" />
                                             <label :for="`checkbox-${product.product_id}`"
                                                 class="sr-only">checkbox</label>
                                         </div>
@@ -517,19 +594,15 @@ function deleteSingleProduct() {
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
                                         <div class="flex items-center">
                                             <label class="inline-flex items-center cursor-pointer" @click.stop>
-                                                <input
-                                                    type="checkbox"
-                                                    class="sr-only peer"
-                                                    :checked="product.product_status === 'ACTIVE'"
-                                                    @change.stop="toggleProductStatus(product)"
-                                                />
-                                                <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 dark:peer-checked:bg-green-600">
+                                                <input type="checkbox" class="sr-only peer"
+                                                    :checked="product.is_active"
+                                                    @change.stop="toggleProductActive(product)" />
+                                                <div
+                                                    class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 dark:peer-checked:bg-green-600">
                                                 </div>
-                                                <span
-                                                    class="ml-3 text-sm font-medium"
-                                                    :class="product.product_status === 'ACTIVE' ? 'text-green-600' : 'text-red-600'"
-                                                >
-                                                    {{ product.product_status === 'ACTIVE' ? 'Active' : 'Inactive' }}
+                                                <span class="ml-3 text-sm font-medium"
+                                                    :class="product.is_active ? 'text-green-600' : 'text-red-600'">
+                                                    {{ product.is_active ? 'Active' : 'Inactive' }}
                                                 </span>
                                             </label>
                                         </div>
@@ -728,25 +801,27 @@ function deleteSingleProduct() {
                                 </tr>
                             </tbody>
                         </table>
-                        <div v-if="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion</h2>
-                            <p class="text-gray-600 dark:text-gray-300 mb-6">
-                            Are you sure you want to delete
-                            <span class="font-bold text-red-600">{{ productToDelete?.product_name }}</span>?
-                            <br>This action cannot be undone.
-                            </p>
-                            <div class="flex justify-end gap-2">
-                            <button @click="closeDeleteModal"
-                                class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                Cancel
-                            </button>
-                            <button @click="deleteSingleProduct"
-                                class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                                Yes, delete
-                            </button>
+                        <div v-if="showDeleteModal"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
+                                </h2>
+                                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                                    Are you sure you want to delete
+                                    <span class="font-bold text-red-600">{{ productToDelete?.product_name }}</span>?
+                                    <br>This action cannot be undone.
+                                </p>
+                                <div class="flex justify-end gap-2">
+                                    <button @click="closeDeleteModal"
+                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                        Cancel
+                                    </button>
+                                    <button @click="deleteSingleProduct"
+                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                        Yes, delete
+                                    </button>
+                                </div>
                             </div>
-                        </div>
                         </div>
                         <!-- Product Details Modal -->
                         <div v-if="showProductModal && !showUpdateModal"
@@ -760,7 +835,7 @@ function deleteSingleProduct() {
                                 <div class="flex flex-col gap-1 mb-4">
                                     <h2 class="text-2xl font-bold text-gray-900">{{ selectedProduct.product_name }}</h2>
                                     <span class="text-xl font-semibold text-gray-700">₱{{ selectedProduct.product_price
-                                        }}</span>
+                                    }}</span>
                                 </div>
                                 <!-- Images (placeholder) -->
                                 <div class="flex gap-4 mb-4">
@@ -800,12 +875,14 @@ function deleteSingleProduct() {
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Category</div>
                                         <div class="font-medium text-gray-900"> {{categories.find(cat =>
-                                            cat.category_id === selectedProduct.category_id)?.category_name || 'N/A' }}
+                                            cat.category_id === selectedProduct.category_id)?.category_name || 'N/A'}}
                                         </div>
                                     </div>
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Sub-category</div>
-                                        <div class="font-medium text-gray-900"> {{ subcategories.find(subcat => subcat.sub_category_id === selectedProduct.sub_category_id)?.sub_category_name || 'N/A' }} </div>
+                                        <div class="font-medium text-gray-900"> {{subcategories.find(subcat =>
+                                            subcat.sub_category_id ===
+                                            selectedProduct.sub_category_id)?.sub_category_name || 'N/A' }} </div>
                                     </div>
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Product Status</div>
@@ -847,7 +924,7 @@ function deleteSingleProduct() {
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Posted Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.post_date)
-                                            }}</div>
+                                        }}</div>
                                     </div>
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Harvest Date</div>
@@ -884,12 +961,12 @@ function deleteSingleProduct() {
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Created Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.created_at)
-                                        }}</div>
+                                            }}</div>
                                     </div>
                                     <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                                         <div class="text-xs text-gray-500">Updated Date</div>
                                         <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at)
-                                            }}</div>
+                                        }}</div>
                                     </div>
                                 </div>
                                 <!-- Action Buttons -->
@@ -919,31 +996,35 @@ function deleteSingleProduct() {
                             </div>
                         </div>
                         <!-- Delete Selected Modal -->
-                        <div v-if="showDeleteSelectedModal" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion</h2>
-                            <p class="text-gray-600 dark:text-gray-300 mb-6">
-                            <span v-if="products && products.length && products.every(p => p.selected)">
-                                Are you sure you want to delete <span class="font-bold text-red-600">all items</span>?
-                            </span>
-                            <span v-else>
-                                Are you sure you want to delete
-                                <span class="font-bold text-red-600">{{ products.filter(p => p.selected).length }}</span>
-                                item<span v-if="products.filter(p => p.selected).length > 1">s</span>?
-                            </span>
-                            <br>This action cannot be undone.
-                            </p>
-                            <div class="flex justify-end gap-2">
-                            <button @click="showDeleteSelectedModal = false"
-                                class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                Cancel
-                            </button>
-                            <button @click="deleteSelectedProducts"
-                                class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                                Yes, delete
-                            </button>
+                        <div v-if="showDeleteSelectedModal"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
+                                </h2>
+                                <p class="text-gray-600 dark:text-gray-300 mb-6">
+                                    <span v-if="products && products.length && products.every(p => p.selected)">
+                                        Are you sure you want to delete <span class="font-bold text-red-600">all
+                                            items</span>?
+                                    </span>
+                                    <span v-else>
+                                        Are you sure you want to delete
+                                        <span class="font-bold text-red-600">{{products.filter(p => p.selected).length
+                                            }}</span>
+                                        item<span v-if="products.filter(p => p.selected).length > 1">s</span>?
+                                    </span>
+                                    <br>This action cannot be undone.
+                                </p>
+                                <div class="flex justify-end gap-2">
+                                    <button @click="showDeleteSelectedModal = false"
+                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                        Cancel
+                                    </button>
+                                    <button @click="deleteSelectedProducts"
+                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                        Yes, delete
+                                    </button>
+                                </div>
                             </div>
-                        </div>
                         </div>
                         <!-- Divider -->
                         <hr class="my-4 border-gray-200 dark:border-gray-700">
