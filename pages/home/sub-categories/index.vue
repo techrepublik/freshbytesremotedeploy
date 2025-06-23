@@ -2,24 +2,7 @@
     definePageMeta({
         layout: "home",
     })
-    // const products = ref([
-    //     {
-    //         category_id: 1,
-    //         sub_id: 2,
-    //         sub_name: "Citrus",
-    //         sub_description: "Papapa",
-    //         sub_created_at: "2023",
-    //         sub_updated_at: "2024"
-    //     },
-    // ])
-    // products.value.push({
-    //     category_id: 1,
-    //     sub_id: 3,
-    //     sub_name: "Leafy G",
-    //     sub_description: "Pafsdfsdfa",
-    //     sub_created_at: "2023",
-    //     sub_updated_at: "2034"
-    // })
+
     const config = useRuntimeConfig()
     const api = config.public.API_LINK
     const { data: subcategories, pending } = await useFetch(`${api}/subcategories/`);

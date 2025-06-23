@@ -12,29 +12,6 @@
     const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
 
-
-    // const products = ref([
-    //     {
-    //         id: 1,
-    //         name: "Papaya",
-    //         category: "Fruits",
-    //         price: "9",
-    //         stock: "123",
-    //         totalSales: "₱1299.99",
-    //         status: "Inactive"
-    //     },
-    // ]);
-    // products.value.push({
-    //     id: 2,
-    //     name: "Banana",
-    //     category: "Fruits",
-    //     price: "12",
-    //     stock: "50",
-    //     totalSales: "₱500.00",
-    //     status: "Active"
-    // });
-
-
     function handleDelete() {
 
         alert("Item deleted!");
