@@ -111,6 +111,41 @@ function formatDate(dateStr) {
 function toggleProductStatus(product) {
     product.product_status = product.product_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 }
+
+const allSelected = ref(false)
+watch(products, (newProducts) => {
+  if (newProducts) {
+    newProducts.forEach(product => {
+      if (product.selected === undefined) product.selected = false
+    })
+  }
+}, { immediate: true })
+
+watch(
+  () => products.value && products.value.map(p => p.selected),
+  (selections) => {
+    if (products.value && products.value.length) {
+      allSelected.value = products.value.every(p => p.selected)
+    }
+  }
+)
+
+function toggleAllSelection() {
+  if (products.value) {
+    products.value.forEach(product => {
+      product.selected = allSelected.value
+    })
+  }
+}
+const showDeleteSelectedModal = ref(false)
+
+function deleteSelectedProducts() {
+  const count = products.value.filter(p => p.selected).length
+  if (count === 0) return
+  products.value = products.value.filter(p => !p.selected)
+  allSelected.value = false
+  showDeleteSelectedModal.value = false
+}
 </script>
 
 <template>
@@ -358,6 +393,17 @@ function toggleProductStatus(product) {
                     <option>Discounted</option>
                 </select>
             </div>
+            <div class="flex items-center space-x-2 mt-2">
+            <button
+                class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition disabled:opacity-50"
+                :disabled="!products?.some(p => p.selected)"
+                @click="showDeleteSelectedModal = true"
+            >
+                <svg class="w-1 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">S
+                </svg>
+                Delete Selected
+            </button>
+            </div>
         </div>
         <div class="flex flex-col">
             <div class="overflow-x-auto">
@@ -368,7 +414,7 @@ function toggleProductStatus(product) {
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
-                                            <input id="checkbox-all" aria-describedby="checkbox-1" type="checkbox"
+                                            <input id="checkbox-all" type="checkbox" v-model="allSelected" @change="toggleAllSelection"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
                                         </div>
@@ -416,9 +462,13 @@ function toggleProductStatus(product) {
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                                     @click.stop="openProductModal(product)">
                                     <td class="w-4 p-4">
-                                        <div class="flex items-center">
-                                            <input :id="`checkbox-${product.product_id}`" type="checkbox"
-                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
+                                        <div class="flex items-center" @click.stop>
+                                            <input
+                                            :id="`checkbox-${product.product_id}`"
+                                            type="checkbox"
+                                            class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                                            v-model="product.selected"
+                                            />
                                             <label :for="`checkbox-${product.product_id}`"
                                                 class="sr-only">checkbox</label>
                                         </div>
