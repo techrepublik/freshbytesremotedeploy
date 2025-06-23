@@ -1,75 +1,76 @@
 <script setup>
-definePageMeta({
-    layout: "home",
-});
-
-// const products = ref([
-//     {
-//         id: 1,
-//         name: "Fruits",
-//         description: "Papapa",
-//         status: "Inactive",
-//         created_at: "2025-06-20T01",
-//         updated_at: "2025-06-20T01"
-//     },
-//     {
-//         id: 2,
-//         name: "Vegetables",
-//         description: "Yayaya",
-//         status: "Active",
-//         created_at: "2025-06-20T01",
-//         updated_at: "2025-06-20T01"
-//     }
-// ])
-const api = "http://192.168.63.238:8000"; // API HERE
-const { data: categories, pending } = await useFetch(`${api}/categories/`);
-
-
-const isCategoryVisible = ref(false);
-const selectedCategory = ref(null);
-
-function showCategoryModal(product) {
-    selectedCategory.value = product;
-    isCategoryVisible.value = true;
-}
-const isUpdateVisible = ref(false);
-const productToUpdate = ref(null);
-
-function openUpdateModal(product) {
-    productToUpdate.value = product;
-    isUpdateVisible.value = true;
-}
-const isDeleteVisible = ref(false);
-const productToDelete = ref(null);
-
-function openDeleteModal(product) {
-    productToDelete.value = product;
-    isDeleteVisible.value = true;
-}
-
-function closeDeleteModal() {
-    isDeleteVisible.value = false;
-    productToDelete.value = null;
-}
-
-function handleDelete() {
-    // Do your deletion logic here using `productToDelete.value`
-    console.log("Deleting:", productToDelete.value);
-    closeDeleteModal();
-}
-
-function formatDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr; // fallback if invalid
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    definePageMeta({
+        layout: "home",
     });
-}
+
+    // const products = ref([
+    //     {
+    //         id: 1,
+    //         name: "Fruits",
+    //         description: "Papapa",
+    //         status: "Inactive",
+    //         created_at: "2025-06-20T01",
+    //         updated_at: "2025-06-20T01"
+    //     },
+    //     {
+    //         id: 2,
+    //         name: "Vegetables",
+    //         description: "Yayaya",
+    //         status: "Active",
+    //         created_at: "2025-06-20T01",
+    //         updated_at: "2025-06-20T01"
+    //     }
+    // ])
+    const config = useRuntimeConfig()
+    const api = config.public.API_LINK;
+    const { data: categories, pending } = await useFetch(`${api}/categories/`);
+
+
+    const isCategoryVisible = ref(false);
+    const selectedCategory = ref(null);
+
+    function showCategoryModal(product) {
+        selectedCategory.value = product;
+        isCategoryVisible.value = true;
+    }
+    const isUpdateVisible = ref(false);
+    const productToUpdate = ref(null);
+
+    function openUpdateModal(product) {
+        productToUpdate.value = product;
+        isUpdateVisible.value = true;
+    }
+    const isDeleteVisible = ref(false);
+    const productToDelete = ref(null);
+
+    function openDeleteModal(product) {
+        productToDelete.value = product;
+        isDeleteVisible.value = true;
+    }
+
+    function closeDeleteModal() {
+        isDeleteVisible.value = false;
+        productToDelete.value = null;
+    }
+
+    function handleDelete() {
+        // Do your deletion logic here using `productToDelete.value`
+        console.log("Deleting:", productToDelete.value);
+        closeDeleteModal();
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr; // fallback if invalid
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
 
 </script>
 

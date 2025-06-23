@@ -1,89 +1,90 @@
 <script setup>
-definePageMeta({
-    layout: "home",
-})
-// const products = ref([
-//     {
-//         category_id: 1,
-//         sub_id: 2,
-//         sub_name: "Citrus",
-//         sub_description: "Papapa",
-//         sub_created_at: "2023",
-//         sub_updated_at: "2024"
-//     },
-// ])
-// products.value.push({
-//     category_id: 1,
-//     sub_id: 3,
-//     sub_name: "Leafy G",
-//     sub_description: "Pafsdfsdfa",
-//     sub_created_at: "2023",
-//     sub_updated_at: "2034"
-// })
-const api = "http://192.168.63.238:8000"; // API HERE
-const { data: subcategories, pending } = await useFetch(`${api}/subcategories/`);
+    definePageMeta({
+        layout: "home",
+    })
+    // const products = ref([
+    //     {
+    //         category_id: 1,
+    //         sub_id: 2,
+    //         sub_name: "Citrus",
+    //         sub_description: "Papapa",
+    //         sub_created_at: "2023",
+    //         sub_updated_at: "2024"
+    //     },
+    // ])
+    // products.value.push({
+    //     category_id: 1,
+    //     sub_id: 3,
+    //     sub_name: "Leafy G",
+    //     sub_description: "Pafsdfsdfa",
+    //     sub_created_at: "2023",
+    //     sub_updated_at: "2034"
+    // })
+    const config = useRuntimeConfig()
+    const api = config.public.API_LINK
+    const { data: subcategories, pending } = await useFetch(`${api}/subcategories/`);
 
-import { ref, computed } from 'vue'
+    import { ref, computed } from 'vue'
 
-// Reactive variables
-const selectedCategory = ref('')
+    // Reactive variables
+    const selectedCategory = ref('')
 
 
-// Sub-category map
-const subCategories = {
-    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-    Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
-}
+    // Sub-category map
+    const subCategories = {
+        Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
+        Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
+    }
 
-// Computed options based on selected category
-const availableSubCategories = computed(() => {
-    return subCategories[selectedCategory.value] || []
-})
+    // Computed options based on selected category
+    const availableSubCategories = computed(() => {
+        return subCategories[selectedCategory.value] || []
+    })
 
-const isCategoryVisible = ref(false)
-const selectedSubCategory = ref(null)
+    const isCategoryVisible = ref(false)
+    const selectedSubCategory = ref(null)
 
-function showCategoryModal(subcategory) {
-    selectedSubCategory.value = subcategory
-    isCategoryVisible.value = true
-}
-const isUpdateVisible = ref(false)
-const productToUpdate = ref(null)
+    function showCategoryModal(subcategory) {
+        selectedSubCategory.value = subcategory
+        isCategoryVisible.value = true
+    }
+    const isUpdateVisible = ref(false)
+    const productToUpdate = ref(null)
 
-function openUpdateModal(product) {
-    productToUpdate.value = product
-    isUpdateVisible.value = true
-}
-const isDeleteVisible = ref(false)
-const productToDelete = ref(null)
+    function openUpdateModal(product) {
+        productToUpdate.value = product
+        isUpdateVisible.value = true
+    }
+    const isDeleteVisible = ref(false)
+    const productToDelete = ref(null)
 
-function openDeleteModal(product) {
-    productToDelete.value = product
-    isDeleteVisible.value = true
-}
+    function openDeleteModal(product) {
+        productToDelete.value = product
+        isDeleteVisible.value = true
+    }
 
-function closeDeleteModal() {
-    isDeleteVisible.value = false
-    productToDelete.value = null
-}
+    function closeDeleteModal() {
+        isDeleteVisible.value = false
+        productToDelete.value = null
+    }
 
-function handleDelete() {
-    // Do your deletion logic here using `productToDelete.value`
-    console.log("Deleting:", productToDelete.value)
-    closeDeleteModal()
-}
-function formatDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr; // fallback if invalid
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
+    function handleDelete() {
+        // Do your deletion logic here using `productToDelete.value`
+        console.log("Deleting:", productToDelete.value)
+        closeDeleteModal()
+    }
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr; // fallback if invalid
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
 </script>
 
 <template>

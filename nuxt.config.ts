@@ -20,6 +20,11 @@ export default defineNuxtConfig({
         { name: 'color-scheme', content: 'light only' }
       ]
     }
-  }
+  },
+  runtimeConfig: {
+    public: {
+      API_LINK: process.env.NUXT_PUBLIC_API_LINK
+    }
+  },
 
 })

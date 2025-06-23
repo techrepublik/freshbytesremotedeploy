@@ -3,12 +3,13 @@
         layout: "home",
     });
 
-const api = "http://192.168.63.238:8000"; // API HERE
-const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
-const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
-const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
+    const config = useRuntimeConfig()
+    const api = config.public.API_LINK // API HERE;
+    const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
+    const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
+    const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
 
-const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
+    const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
 
 
@@ -45,107 +46,107 @@ const loading = computed(() => pendingProducts.value || pendingCategories.value 
     const selectedCategory = ref('');
     const selectedSubCategory = ref('');
 
-// Sub-category map
-const subCategories = {
-    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-    Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
-};
+    // Sub-category map
+    const subCategories = {
+        Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
+        Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
+    };
 
-// Computed options based on selected category
-const availableSubCategories = computed(() => {
-    return subCategories[selectedCategory.value] || [];
-});
-
-const showAddProductModal = ref(false);
-function openAddProductModal() {
-    showAddProductModal.value = true;
-}
-function closeAddProductModal() {
-    showAddProductModal.value = false;
-}
-
-const showProductModal = ref(false);
-const selectedProduct = ref(null);
-
-function openProductModal(product) {
-    selectedProduct.value = product;
-    showProductModal.value = true;
-}
-function closeProductModal() {
-    showProductModal.value = false;
-    selectedProduct.value = null;
-}
-
-const showUpdateModal = ref(false);
-
-function openUpdateModal() {
-    showUpdateModal.value = true;
-}
-function closeUpdateModal() {
-    showUpdateModal.value = false;
-}
-
-const showDeleteModal = ref(false);
-const productToDelete = ref(null);
-
-function openDeleteModal(product) {
-    productToDelete.value = product;
-    showDeleteModal.value = true;
-}
-function closeDeleteModal() {
-    showDeleteModal.value = false;
-    productToDelete.value = null;
-}
-function formatDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr; // fallback if invalid
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    // Computed options based on selected category
+    const availableSubCategories = computed(() => {
+        return subCategories[selectedCategory.value] || [];
     });
-}
-function toggleProductStatus(product) {
-    product.product_status = product.product_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-}
 
-const allSelected = ref(false)
-watch(products, (newProducts) => {
-  if (newProducts) {
-    newProducts.forEach(product => {
-      if (product.selected === undefined) product.selected = false
-    })
-  }
-}, { immediate: true })
-
-watch(
-  () => products.value && products.value.map(p => p.selected),
-  (selections) => {
-    if (products.value && products.value.length) {
-      allSelected.value = products.value.every(p => p.selected)
+    const showAddProductModal = ref(false);
+    function openAddProductModal() {
+        showAddProductModal.value = true;
     }
-  }
-)
+    function closeAddProductModal() {
+        showAddProductModal.value = false;
+    }
 
-function toggleAllSelection() {
-  if (products.value) {
-    products.value.forEach(product => {
-      product.selected = allSelected.value
-    })
-  }
-}
-const showDeleteSelectedModal = ref(false)
+    const showProductModal = ref(false);
+    const selectedProduct = ref(null);
 
-function deleteSelectedProducts() {
-  const count = products.value.filter(p => p.selected).length
-  if (count === 0) return
-  products.value = products.value.filter(p => !p.selected)
-  allSelected.value = false
-  showDeleteSelectedModal.value = false
-}
+    function openProductModal(product) {
+        selectedProduct.value = product;
+        showProductModal.value = true;
+    }
+    function closeProductModal() {
+        showProductModal.value = false;
+        selectedProduct.value = null;
+    }
+
+    const showUpdateModal = ref(false);
+
+    function openUpdateModal() {
+        showUpdateModal.value = true;
+    }
+    function closeUpdateModal() {
+        showUpdateModal.value = false;
+    }
+
+    const showDeleteModal = ref(false);
+    const productToDelete = ref(null);
+
+    function openDeleteModal(product) {
+        productToDelete.value = product;
+        showDeleteModal.value = true;
+    }
+    function closeDeleteModal() {
+        showDeleteModal.value = false;
+        productToDelete.value = null;
+    }
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr; // fallback if invalid
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    function toggleProductStatus(product) {
+        product.product_status = product.product_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    }
+
+    const allSelected = ref(false)
+    watch(products, (newProducts) => {
+    if (newProducts) {
+        newProducts.forEach(product => {
+        if (product.selected === undefined) product.selected = false
+        })
+    }
+    }, { immediate: true })
+
+    watch(
+    () => products.value && products.value.map(p => p.selected),
+    (selections) => {
+        if (products.value && products.value.length) {
+        allSelected.value = products.value.every(p => p.selected)
+        }
+    }
+    )
+
+    function toggleAllSelection() {
+    if (products.value) {
+        products.value.forEach(product => {
+        product.selected = allSelected.value
+        })
+    }
+    }
+    const showDeleteSelectedModal = ref(false)
+
+    function deleteSelectedProducts() {
+    const count = products.value.filter(p => p.selected).length
+    if (count === 0) return
+    products.value = products.value.filter(p => !p.selected)
+    allSelected.value = false
+    showDeleteSelectedModal.value = false
+    }
 </script>
 
 <template>
