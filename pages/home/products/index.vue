@@ -41,19 +41,19 @@ const newProduct = ref({
 });
 
 async function toggleProductActive(product) {
+  product.is_active = !product.is_active;
+  try {
+    await $fetch(`${api}/products/${product.product_id}/`, {
+      method: 'PATCH',
+      body: { is_active: product.is_active }
+    });
+    // Optionally, show a success message here
+  } catch (error) {
+    // If the API fails, revert the change
     product.is_active = !product.is_active;
-    try {
-        await $fetch(`${api}/products/${product.product_id}`, {
-        method: 'PATCH',
-        body: { is_active: product.is_active }
-        });
-        // Optionally, show a success message here
-    } catch (error) {
-        // If the API fails, revert the change
-        product.is_active = !product.is_active;
-        alert('Failed to update product display status.');
-        console.error(error);
-    }
+    alert('Failed to update product display status.');
+    console.error(error);
+  }
 }
 
 async function addProduct() {
