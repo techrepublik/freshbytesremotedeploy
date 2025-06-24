@@ -1,66 +1,148 @@
 <script setup>
-    definePageMeta({
-        layout: "home",
-    });
+import { ref, computed } from 'vue';
 
-    const config = useRuntimeConfig()
-    const api = config.public.API_LINK;
-    const { data: categories, pending } = useFetch(`${api}/categories/`, {server: false});
+definePageMeta({
+    layout: "home",
+});
 
+const config = useRuntimeConfig();
+const api = config.public.API_LINK;
 
-    const isCategoryVisible = ref(false);
-    const selectedCategory = ref(null);
+const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
+const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
+const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
 
-    function showCategoryModal(product) {
-        selectedCategory.value = product;
-        isCategoryVisible.value = true;
-    }
-    const isUpdateVisible = ref(false);
-    const productToUpdate = ref(null);
+const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
-    function openUpdateModal(product) {
-        productToUpdate.value = product;
-        isUpdateVisible.value = true;
-    }
-    const isDeleteVisible = ref(false);
-    const productToDelete = ref(null);
+const newCategory = ref({
+    category_name: "",
+    category_description: "",
+    category_isActive: true,
+    category_image: null,
+    created_at: null,
+    updated_at: null
+});
 
-    function openDeleteModal(product) {
-        productToDelete.value = product;
-        isDeleteVisible.value = true;
-    }
+// Modal state
+const isCategoryVisible = ref(false);
+const selectedCategory = ref(null);
 
-    function closeDeleteModal() {
-        isDeleteVisible.value = false;
-        productToDelete.value = null;
-    }
+const isUpdateVisible = ref(false);
+const productToUpdate = ref(null);
 
-    function handleDelete() {
-        // Do your deletion logic here using `productToDelete.value`
-        console.log("Deleting:", productToDelete.value);
-        closeDeleteModal();
-    }
+const isDeleteVisible = ref(false);
+const productToDelete = ref(null);
 
-    function formatDate(dateStr) {
-        if (!dateStr) return 'N/A';
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr; // fallback if invalid
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+// Add Category
+async function addCategory() {
+    console.log(newCategory.value)
+    // if (
+    //     !newCategory.value.category_name ||
+    //     !newCategory.value.category_description
+    // ) {
+    //     alert('Please fill all required fields.');
+    //     return;
+    // }
+
+    try {
+        await $fetch(`${api}/categories/`, {
+            method: 'POST',
+            body: newCategory.value,
         });
+        alert("Data added successfully")
+        closeAddCategoryModal();
+        resetNewCategory();
+        Object.keys(newCategory.value).forEach(key => newCategory.value[key] = null);
+        await refreshNuxtData();
+    } catch (error) {
+        alert('Failed to add category.');
+        console.error('API error:', error.data || error);
     }
+}
+
+function resetNewCategory() {
+    newCategory.value = {
+        category_name: "",
+        category_description: "",
+        category_isActive: true,
+        category_image: null,
+        created_at: null,
+        updated_at: null
+    };
+}
+
+function closeAddCategoryModal() {
+    resetNewCategory();
+    document.getElementById('addCategory')?.classList.add('hidden');
+}
+
+function showCategoryModal(category) {
+    selectedCategory.value = category;
+    isCategoryVisible.value = true;
+}
+
+function openUpdateModal(category) {
+    productToUpdate.value = category;
+    isUpdateVisible.value = true;
+}
+
+function openDeleteModal(category) {
+    productToDelete.value = category;
+    isDeleteVisible.value = true;
+}
+
+function closeDeleteModal() {
+    isDeleteVisible.value = false;
+    productToDelete.value = null;
+}
+
+function handleDelete() {
+    // Implement deletion logic here
+    console.log("Deleting:", productToDelete.value);
+    closeDeleteModal();
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    if (isNaN(date)) return dateStr;
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Sub-category logic (if needed)
+const selectedMainCategory = ref('');
+const selectedSubCategory = ref('');
+
+const subCategories = {
+    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
+    Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
+};
+
+const availableSubCategories = computed(() => {
+    return subCategories[selectedMainCategory.value] || [];
+});
 
 </script>
 
 <template>
     <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="pending">
-        
+
         <div role="status">
-            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg>
+            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                    fill="currentColor" />
+                <path
+                    d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                    fill="currentFill" />
+            </svg>
             <span class="sr-only">Loading...</span>
         </div>
     </div>
@@ -121,7 +203,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block mb-1 font-medium">Category Name</label>
-                                <input type="text"
+                                <input v-model="newCategory.category_name" type="text"
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                     placeholder="Type product name" />
                             </div>
@@ -138,7 +220,7 @@
 
                             <div>
                                 <label class="block mb-1 font-medium">Category Description</label>
-                                <textarea
+                                <textarea v-model="newCategory.category_description"
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                     rows="3" placeholder="Write product description here"></textarea>
                             </div>
@@ -161,8 +243,8 @@
                         </div>
                         <div class="flex justify-end space-x-2 mt-6">
                             <button type="button"
-                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
-                                product</button>
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" @click="addCategory">Add
+                                category</button>
                             <button type="button"
                                 onclick="document.getElementById('addCategory').classList.add('hidden')"
                                 class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
@@ -344,7 +426,7 @@
                                                                 <div
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
                                                                     {{ selectedCategory?.category_isActive ? 'Inactive'
-                                                                    : 'Active' }}
+                                                                        : 'Active' }}
                                                                 </div>
                                                             </div>
 
@@ -390,7 +472,7 @@
                                             <div id="updateModal" v-if="isUpdateVisible"
                                                 class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 ">
                                                 <div class="bg-white p-6 rounded shadow-lg max-w-xl w-full h-screen overflow-y-auto"
-                                                @click.stop>
+                                                    @click.stop>
                                                     <h2
                                                         class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
                                                         Update Category</h2>
