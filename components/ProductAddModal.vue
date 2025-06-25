@@ -18,7 +18,26 @@
         },
     })
 
-    defineEmits(['closeAddProductModal', 'addProduct'])
+    // grab the emit helper
+    const emit = defineEmits(['closeAddProductModal','addProduct'])
+
+    // wrap the emit so the template can call it
+    function onAdd() {
+        emit('addProduct')
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr; // fallback if invalid
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
 </script>
 
 <template>
@@ -42,7 +61,7 @@
                     <div>
                         <label class="block mb-1 font-medium">Product Name</label>
                         <input type="text"
-                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                            class="w-full px-3 py-2 rounded   focus:outline-none"
                             placeholder="Type product name" v-model="newProduct.product_name" />
                     </div>
                     <div>
@@ -84,8 +103,8 @@
                             v-model="newProduct.product_status" required>
                             <option disabled value="">Select status</option>
                             <option value="FRESH">Fresh</option>
-                            <option value="slightly_withered">Slightly Withered</option>
-                            <option value="withered">Withered</option>
+                            <option value="SLIGHTLY_WITHERED">Slightly Withered</option>
+                            <option value="ROTTEN">Rotten</option>
                         </select>
                     </div>
                     <div>
@@ -101,13 +120,13 @@
                             placeholder="0" v-model="newProduct.quantity" />
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Posted Date</label>
+                        <label class="block mb-1 font-medium">Posted Date & Time</label>
                         <input type="date"
                             class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             v-model="newProduct.post_date" />
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Harvest Date</label>
+                        <label class="block mb-1 font-medium">Harvest Date & Time</label>
                         <input type="date"
                             class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             v-model="newProduct.harvest_date" />

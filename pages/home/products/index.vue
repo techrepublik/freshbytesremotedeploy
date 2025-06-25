@@ -88,6 +88,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
         newProduct.value.sell_count = 0;
     }
 
+    console.log(newProduct.value);
+
     try {
         await $fetch(`${api}/products/`, {
         method: 'POST',
@@ -95,10 +97,48 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
         });
         await refreshNuxtData();
         closeAddProductModal();
-        Object.keys(newProduct.value).forEach(key => newProduct.value[key] = null);
     } catch (error) {
         alert('Failed to add product.');
         console.error('API error:', error.data || error);
+    }
+    }
+
+    async function deleteSingleProduct() {
+    if (!productToDelete.value) return;
+    try {
+        await $fetch(`${api}/products/${productToDelete.value.product_id}/`, {
+        method: 'DELETE'
+        });
+        // Remove from local list
+        if (products.value) {
+        products.value = products.value.filter(p => p.product_id !== productToDelete.value.product_id);
+        }
+        closeDeleteModal();
+        alert('Item deleted successfully!');
+    } catch (error) {
+        alert('Failed to delete product.');
+        console.error(error);
+    }
+    }
+
+    async function deleteSelectedProducts() {
+    const selected = products.value.filter(p => p.selected);
+    if (!selected.length) return;
+    try {
+        // Delete each selected product in the backend
+        await Promise.all(
+          selected.map(product =>
+            $fetch(`${api}/products/${product.product_id}/`, { method: 'DELETE' })
+          )
+        );
+        // Remove from local list
+        products.value = products.value.filter(p => !p.selected);
+        allSelected.value = false;
+        showDeleteSelectedModal.value = false;
+        alert('Selected items deleted successfully!');
+    } catch (error) {
+        alert('Failed to delete selected products.');
+        console.error(error);
     }
     }
 
@@ -107,6 +147,16 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
         alert("Item deleted!");
         document.getElementById('deleteModal').classList.add('hidden');
     }
+
+    function closeDeleteSelectedModal() {
+        showDeleteSelectedModal.value = false;
+        // Deselect all products
+        if (products.value) {
+            products.value.forEach(p => p.selected = false);
+        }
+        allSelected.value = false;
+    }
+
     import { ref, computed } from 'vue';
 
     // Reactive variables
@@ -127,22 +177,40 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
     const showAddProductModal = ref(false);
     function openAddProductModal() {
         showAddProductModal.value = true;
+        // initialize dates with current datetime for DRF
+        const nowLocal = new Date().toISOString().slice(0,16);
+        newProduct.value.post_date = nowLocal;
+        newProduct.value.harvest_date = nowLocal;
     }
     function closeAddProductModal() {
-    showAddProductModal.value = false;
-    // Reset all fields in newProduct
-    Object.keys(newProduct.value).forEach(key => {
-        // Set booleans to false, numbers to null, strings to empty string
-        if (typeof newProduct.value[key] === 'boolean') {
-            newProduct.value[key] = false;
-        } else if (typeof newProduct.value[key] === 'number') {
-            newProduct.value[key] = null;
-        } else {
-            newProduct.value[key] = '';
-        }
-    });
-    // Set is_active to true by default if needed
-    newProduct.value.is_active = true;
+        showAddProductModal.value = false;
+        // Reset newProduct to original defaults
+        newProduct.value = {
+            seller_id: null,
+            product_name: "",
+            product_price: null,
+            product_brief_description: "",
+            product_full_description: "",
+            product_discountedPrice: null,
+            product_sku: "",
+            product_status: null,
+            product_location: "",
+            category_id: null,
+            sub_category_id: null,
+            quantity: null,
+            post_date: null,
+            harvest_date: null,
+            is_active: true,
+            review_count: 0,
+            top_rated: false,
+            is_discounted: false,
+            is_srp: false,
+            is_deleted: false,
+            sell_count: 0,
+            offer_start_date: null,
+            offer_end_date: null,
+            has_promo: false
+        };
     }
 
     const showProductModal = ref(false);
@@ -159,14 +227,24 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
 
     const showUpdateModal = ref(false);
 
-    function openUpdateModal() {
-        showUpdateModal.value = true;
+    console.log("showUpdateModal", showUpdateModal.value);
+    function openUpdateModal(product) {
+    selectedProduct.value = product;
+    showUpdateModal.value = true;
     }
+    
+    async function refreshProducts() {
+    // If you use useFetch, you can use refreshNuxtData to re-fetch products
+    await refreshNuxtData();
+    }
+
     function closeUpdateModal() {
         showUpdateModal.value = false;
+        selectedProduct.value = null;
     }
 
     const showDeleteModal = ref(false);
+    const showDeleteSelectedModal = ref(false);
     const productToDelete = ref(null);
 
     function openDeleteModal(product) {
@@ -217,15 +295,6 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
         product.selected = allSelected.value
         })
     }
-    }
-    const showDeleteSelectedModal = ref(false)
-
-    function deleteSelectedProducts() {
-    const count = products.value.filter(p => p.selected).length
-    if (count === 0) return
-    products.value = products.value.filter(p => !p.selected)
-    allSelected.value = false
-    showDeleteSelectedModal.value = false
     }
 </script>
 
@@ -389,8 +458,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.product_status" required>
                                 <option disabled value="">Select status</option>
                                 <option value="FRESH">Fresh</option>
-                                <option value="slightly_withered">Slightly Withered</option>
-                                <option value="withered">Withered</option>
+                                <option value="SLIGHTLY_WITHERED">Slightly Withered</option>
+                                <option value="ROTTEN">Rotten</option>
                             </select>
                         </div>
                         <div>
@@ -407,12 +476,12 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Posted Date</label>
-                            <input type="date"
+                            <input type="datetime-local"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.post_date"/>
                         </div>
                         <div>
                             <label class="block mb-1 font-medium">Harvest Date</label>
-                            <input type="date"
+                            <input type="datetime-local"
                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" v-model="newProduct.harvest_date"/>
                         </div>
                     </div>
@@ -441,8 +510,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                     <div class="flex justify-end space-x-2 mt-6">
                         <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" @click="addProduct">Add
                             product</button>
-                        <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
-                            @click="closeAddProductModal">Cancel</button>
+                        <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded" @click="closeAddProductModal">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -553,8 +621,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                                 <tr v-for="product in products" :key="product.product_id"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                                    @click.stop="openProductModal(product)">
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <!-- Removed row click to avoid masking button clicks -->
                                     <td class="w-4 p-4">
                                         <div class="flex items-center" @click.stop>
                                             <input
@@ -576,7 +644,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                         {{ product.seller_id }}
                                     </td>
                                     <td
-                                        class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                        class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white cursor-pointer"
+                                        @click="openProductModal(product)">
                                         {{ product.product_name }}
                                     </td>
                                     <td
@@ -615,15 +684,15 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                     </td>
                                     <td class="p-4  space-x-2 whitespace-nowrap">
                                         <div class="flex justify-center items-center space-x-2">
-
-                                            <button type="button" @click.stop="openUpdateModal"
+                                            
+                                            <button type="button" @click.stop="openUpdateModal(product)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] hover:text-white rounded-lg bg-primary-700 hover:bg-green-600 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path
                                                         d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z">
                                                     </path>
                                                     <path fill-rule="evenodd"
-                                                        d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                                                        d="M2 6a2 2 0 002-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
                                                         clip-rule="evenodd"></path>
                                                 </svg>
                                                 Update
@@ -639,13 +708,19 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
 
                                             </button>
                                         </div>
-
-                                        <!-- Update Modal-->
-                                        <ProductUpdateModal :show-update-modal="showUpdateModal" @close-update-modal="closeUpdateModal"></ProductUpdateModal>
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                        <!-- Update Modal-->
+                        <ProductUpdateModal
+                            :show-update-modal="showUpdateModal"
+                            :product-to-update="selectedProduct"
+                            :categories="categories.value"
+                            :subcategories="subcategories.value"
+                            @close-update-modal="closeUpdateModal"
+                            @updated="refreshProducts"
+                        />
                         <div v-if="showDeleteModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
                             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
@@ -691,7 +766,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                     <br>This action cannot be undone.
                                 </p>
                                 <div class="flex justify-end gap-2">
-                                    <button @click="showDeleteSelectedModal = false"
+                                    <button @click="closeDeleteSelectedModal"
                                         class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
                                         Cancel
                                     </button>
