@@ -26,20 +26,19 @@ const newSubCategory = ref({
 // Reactive variables
 const selectedSubCategory = ref('')
 
-
+const selectedCategory = ref('');
 // Sub-category map
 const subCategories = {
     Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
 }
 
 const isSubCategoryVisible = ref(false);
-const selectedCategory = ref(null);
-
 const isUpdateVisible = ref(false);
 const subcategoryToUpdate = ref(null);
 
 const isDeleteVisible = ref(false);
 const subcategoryToDelete = ref(null);
+const selectedSubCategoryIds = ref([]);
 
 async function addSubCategory() {
     console.log(newSubCategory.value)
@@ -161,7 +160,35 @@ function formatDate(dateStr) {
         minute: '2-digit'
     });
 }
-
+function toggleSelectAll(event) {
+    if (event.target.checked) {
+        selectedSubCategoryIds.value = subcategories.value.map(sub => sub.sub_category_id);
+    } else {
+        selectedSubCategoryIds.value = [];
+    }
+}
+async function deleteSelectedCategories() {
+    if (selectedSubCategoryIds.value.length === 0) {
+        alert('No categories selected.');
+        return;
+    }
+    if (!confirm(`Are you sure you want to delete ${selectedSubCategoryIds.value.length} categor${selectedSubCategoryIds.value.length === 1 ? 'y' : 'ies'}? This action cannot be undone.`)) {
+        return;
+    }
+    try {
+        for (const id of selectedSubCategoryIds.value) {
+            await $fetch(`${api}/subcategories/${id}/`, {
+                method: 'DELETE',
+            });
+        }
+        alert('Selected subcategories deleted successfully.');
+        selectedSubCategoryIds.value = [];
+        await refreshNuxtData();
+    } catch (error) {
+        alert('Failed to delete selected categories.');
+        console.error('API error:', error.data || error);
+    }
+}
 </script>
 
 <template>
@@ -276,7 +303,8 @@ function formatDate(dateStr) {
                         </div>
                     </div>
                     <div class="flex justify-end space-x-2 mt-6">
-                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"  @click="addSubCategory">Add
+                        <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                            @click="addSubCategory">Add
                             subcategory</button>
                         <button type="button"
                             onclick="document.getElementById('addSubCategory').classList.add('hidden')"
@@ -296,17 +324,9 @@ function formatDate(dateStr) {
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <select v-model="selectedCategory"
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select Parent Category</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Vegetables">Vegetables</option>
-                </select>
-
-                <select v-model="selectedSubCategory"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    :disabled="!selectedCategory">
-                    <option value="">Select Sub-Category</option>
-                    <option v-for="(sub, index) in availableSubCategories" :key="index" :value="sub">
-                        {{ sub }}
+                    <option value="">Select Category</option>
+                    <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
+                        {{ cat.category_name }}
                     </option>
                 </select>
                 <select
@@ -316,14 +336,19 @@ function formatDate(dateStr) {
                     <option>By Alphabetical</option>
 
                 </select>
-                <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Status</option>
-                    <option>Inactive</option>
-                    <option>Active</option>
-
-                </select>
+                
             </div>
+        </div>
+        <div class="flex justify-end mb-4">
+            <button class="px-4 py-2 rounded 
+      transition 
+      font-medium
+      mb-4
+      bg-red-600 text-white hover:bg-red-700
+      disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                :disabled="selectedSubCategoryIds.length === 0" @click="deleteSelectedCategories">
+                Delete {{ selectedSubCategoryIds.length }} item<span v-if="selectedSubCategoryIds.length !== 1">s</span>
+            </button>
         </div>
         <div class="flex flex-col">
             <div class="overflow-x-auto">
@@ -334,8 +359,10 @@ function formatDate(dateStr) {
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
-                                            <input id="checkbox-all" aria-describedby="checkbox-1" type="checkbox"
-                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+                                            <input id="checkbox-all" type="checkbox"
+                                                :checked="selectedSubCategoryIds.length === subcategories.length && subcategories.length > 0"
+                                                @change="toggleSelectAll"
+                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
                                         </div>
                                     </th>
@@ -378,6 +405,8 @@ function formatDate(dateStr) {
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
                                             <input :id="`checkbox-${subcategory.sub_category_id}`" type="checkbox"
+                                                :value="subcategory.sub_category_id" v-model="selectedSubCategoryIds"
+                                                @click.stop
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
                                             <label :for="`checkbox-${subcategory.sub_category_id}`"
                                                 class="sr-only">checkbox</label>
