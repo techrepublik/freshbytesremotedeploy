@@ -32,6 +32,7 @@ const categoryToUpdate = ref(null);
 
 const isDeleteVisible = ref(false);
 const categoryToDelete = ref(null);
+const selectedCategoryIds = ref([]);
 
 // Add Category
 async function addCategory() {
@@ -138,6 +139,13 @@ function closeDeleteModal() {
     categoryToDelete.value = null;
 }
 
+function toggleSelectAll(event) {
+    if (event.target.checked) {
+        selectedCategoryIds.value = categories.value.map(cat => cat.category_id);
+    } else {
+        selectedCategoryIds.value = [];
+    }
+}
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
@@ -165,10 +173,33 @@ const availableSubCategories = computed(() => {
     return subCategories[selectedMainCategory.value] || [];
 });
 
+async function deleteSelectedCategories() {
+    if (selectedCategoryIds.value.length === 0) {
+        alert('No categories selected.');
+        return;
+    }
+    if (!confirm(`Are you sure you want to delete ${selectedCategoryIds.value.length} categor${selectedCategoryIds.value.length === 1 ? 'y' : 'ies'}? This action cannot be undone.`)) {
+        return;
+    }
+    try {
+        // Delete each selected category (sequentially)
+        for (const id of selectedCategoryIds.value) {
+            await $fetch(`${api}/categories/${id}/`, {
+                method: 'DELETE',
+            });
+        }
+        alert('Selected categories deleted successfully.');
+        selectedCategoryIds.value = [];
+        await refreshNuxtData();
+    } catch (error) {
+        alert('Failed to delete selected categories.');
+        console.error('API error:', error.data || error);
+    }
+}
 </script>
 
 <template>
-    <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="loading">
+    <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="pending">
 
         <div role="status">
             <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
@@ -246,12 +277,11 @@ const availableSubCategories = computed(() => {
                             </div>
                             <div>
                                 <label class="block mb-1 font-medium">Category Status</label>
-                                <select
+                                <select v-model="newCategory.category_isActive"
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                    <option>Select Category Status</option>
-                                    <option>Inactive</option>
-                                    <option>Active</option>
-
+                                    <option disabled value="">Select Category Status</option>
+                                    <option :value="false">Inactive</option>
+                                    <option :value="true">Active</option>
                                 </select>
                             </div>
 
@@ -300,13 +330,6 @@ const availableSubCategories = computed(() => {
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
                 <select
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Select Category</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Vegetables">Vegetables</option>
-                </select>
-
-                <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option>Filter</option>
                     <option>By upload date</option>
                     <option>By Alphabetical</option>
@@ -321,6 +344,17 @@ const availableSubCategories = computed(() => {
                 </select>
             </div>
         </div>
+        <div class="flex justify-end mb-4">
+            <button class="px-4 py-2 rounded 
+      transition 
+      font-medium
+      mb-4
+      bg-red-600 text-white hover:bg-red-700
+      disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+                :disabled="selectedCategoryIds.length === 0" @click="deleteSelectedCategories">
+                Delete {{ selectedCategoryIds.length }} item<span v-if="selectedCategoryIds.length !== 1">s</span>
+            </button>
+        </div>
         <div class="flex flex-col">
             <div class="overflow-x-auto">
                 <div class="inline-block min-w-full align-middle">
@@ -331,8 +365,10 @@ const availableSubCategories = computed(() => {
                                 <tr>
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
-                                            <input id="checkbox-all" aria-describedby="checkbox-1" type="checkbox"
-                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600">
+                                            <input id="checkbox-all" type="checkbox"
+                                                :checked="selectedCategoryIds.length === categories.length && categories.length > 0"
+                                                @change="toggleSelectAll"
+                                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
                                         </div>
                                     </th>
@@ -375,6 +411,7 @@ const availableSubCategories = computed(() => {
                                     <td class="w-4 p-4">
                                         <div class="flex items-center">
                                             <input :id="`checkbox-${category.category_id}`" type="checkbox"
+                                                :value="category.category_id" v-model="selectedCategoryIds" @click.stop
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
                                             <label :for="`checkbox-${category.category_id}`"
                                                 class="sr-only">checkbox</label>
