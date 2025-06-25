@@ -294,6 +294,26 @@
         })
     }
     }
+
+    const showTooltip = ref(false);
+    
+    const currentPage = ref(1);
+    const pageSize = 20; // or whatever your page size is
+    const total = computed(() => products?.value?.length || 0); // or use your API's total count
+
+    const totalPages = computed(() => Math.ceil(total.value / pageSize));
+
+    const paginatedProducts = computed(() => {
+    if (!products.value) return [];
+    const start = (currentPage.value - 1) * pageSize;
+    return products.value.slice(start, start + pageSize);
+    });
+
+    function goToPage(page) {
+    if (page < 1 || page > totalPages.value) return;
+    currentPage.value = page;
+    }
+
 </script>
 
 <template>
@@ -373,12 +393,30 @@
         </div>
         <h1 v-if="loading">Loading...</h1>
         <div class="flex items-center justify-between mt-4 mb-4">
-            <div class="flex items-center space-x-2">
-                <span class="font-semibold text-black text-xl">FreshBytes Products</span>
-                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+            <div class="relative inline-block">
+                <span
+                    class="inline-flex items-center font-semibold text-2xl cursor-pointer"
+                    @mouseenter="showTooltip = true"
+                    @mouseleave="showTooltip = false"
+                >
+                    FreshBytes Products
+                    <svg
+                    class="w-5 h-5 ml-2 transition-colors duration-200"
+                    :class="showTooltip ? 'text-black' : 'text-gray-400'"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    >
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none" />
-                    <text x="10" y="15" text-anchor="middle" font-size="12" fill="currentColor">i</text>
-                </svg>
+                    <text x="10" y="15" text-anchor="middle" font-size="13" fill="currentColor">i</text>
+                    </svg>
+                </span>
+                <div
+                    v-if="showTooltip"
+                    class="absolute left-1/2 -translate-x-1/2 mt-2 px-4 py-2 rounded bg-gray-900 text-white text-sm shadow-lg z-50 whitespace-nowrap"
+                >
+                    Showing {{ products && products.length ? 1 : 0 }}-{{ products && products.length ? products.length : 0 }}
+                    of {{ products && products.length ? products.length : 0 }} results
+                </div>
             </div>
             <div class="flex items-center space-x-2">
                 <button
@@ -495,7 +533,7 @@
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="product in products" :key="product.product_id" 
+                                <tr v-for="product in paginatedProducts" :key="product.product_id" 
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @click="openProductModal(product)">
                                     <!-- Removed row click to avoid masking button clicks -->
                                     <td class="w-4 p-4">
@@ -653,6 +691,65 @@
                         </div>
                         <!-- Divider -->
                         <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+                        <!-- Pagination -->
+                        <div class="flex items-center justify-between mb-4">
+                        <!-- Pagination Controls -->
+                        <nav aria-label="Page navigation">
+                            <ul class="inline-flex items-center -space-x-px">
+                            <!-- Previous Button -->
+                            <li>
+                                <button
+                                class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                :disabled="currentPage === 1"
+                                @click="goToPage(currentPage - 1)"
+                                >
+                                <span class="sr-only">Previous</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                </button>
+                            </li>
+                            <!-- Page Numbers -->
+                            <li v-for="page in Math.min(totalPages, 5)" :key="page">
+                                <button
+                                class="flex items-center justify-center h-10 w-10 leading-tight border border-gray-300
+                                    hover:bg-gray-100 hover:text-green-700
+                                    focus:z-20 focus:ring-2 focus:ring-green-500
+                                    transition
+                                    "
+                                :class="{
+                                    'bg-green-50 text-green-600 border-green-400': currentPage === page,
+                                    'bg-white text-gray-500': currentPage !== page
+                                }"
+                                @click="goToPage(page)"
+                                >
+                                {{ page }}
+                                </button>
+                            </li>
+                            <!-- Next Button -->
+                            <li>
+                                <button
+                                class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                :disabled="currentPage === totalPages"
+                                @click="goToPage(currentPage + 1)"
+                                >
+                                <span class="sr-only">Next</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                                </button>
+                            </li>
+                            </ul>
+                        </nav>
+                        <!-- Showing Info -->
+                        <div class="text-sm text-gray-500 ml-4">
+                            Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
+                            -
+                            <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
+                            of <span class="font-semibold">{{ total }}</span>
+                        </div>
+                        </div>
 
                         <!-- Action buttons section (above footer) -->
                         <div class="flex justify-end items-center space-x-4 mb-4">
