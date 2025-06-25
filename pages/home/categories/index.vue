@@ -168,7 +168,7 @@ const availableSubCategories = computed(() => {
 </script>
 
 <template>
-    <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="pending">
+    <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="loading">
 
         <div role="status">
             <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
