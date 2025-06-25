@@ -25,7 +25,20 @@ const newSubCategory = ref({
 
 // Reactive variables
 const selectedSubCategory = ref('')
-
+const searchQuery = ref('');
+const filteredSubcategories = computed(() => {
+    let list = subcategories.value || [];
+    if (searchQuery.value) {
+        list = list.filter(sub =>
+            sub.sub_category_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            sub.sub_category_description?.toLowerCase().includes(searchQuery.value.toLowerCase())
+        );
+    }
+    if (selectedCategory.value) {
+        list = list.filter(sub => sub.category_id == selectedCategory.value);
+    }
+    return list;
+});
 const selectedCategory = ref('');
 // Sub-category map
 const subCategories = {
@@ -320,8 +333,9 @@ async function deleteSelectedCategories() {
 
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
-                <input type="text" placeholder="Search"
+                <input type="text" v-model="searchQuery" placeholder="Search"
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+
                 <select v-model="selectedCategory"
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Category</option>
@@ -329,14 +343,6 @@ async function deleteSelectedCategories() {
                         {{ cat.category_name }}
                     </option>
                 </select>
-                <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Filter</option>
-                    <option>By upload date</option>
-                    <option>By Alphabetical</option>
-
-                </select>
-                
             </div>
         </div>
         <div class="flex justify-end mb-4">
@@ -398,7 +404,7 @@ async function deleteSelectedCategories() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="subcategory in subcategories" :key="subcategory.sub_category_id"
+                               <tr v-for="subcategory in filteredSubcategories" :key="subcategory.sub_category_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700"
                                     @click="showCategoryModal(subcategory)">
 
@@ -502,9 +508,6 @@ async function deleteSelectedCategories() {
                                                             </div>
                                                         </div>
                                                         <div class="flex justify-end space-x-2 mt-6">
-                                                            <button type="button"
-                                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
-                                                                product</button>
                                                             <button type="button"
                                                                 @click="isSubCategoryVisible = false; selectedSubCategory = null"
                                                                 class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">

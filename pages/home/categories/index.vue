@@ -22,17 +22,37 @@ const newCategory = ref({
     created_at: null,
     updated_at: null
 });
+const searchQuery = ref('');
+const filteredCategories = computed(() => {
+    let list = categories.value || [];
+    if (searchQuery.value) {
+        list = list.filter(sub =>
+            sub.category_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+            sub.category_description?.toLowerCase().includes(searchQuery.value.toLowerCase())
+        );
+    }
+    if (statusFilter.value) {
+        list = list.filter(sub =>
+            statusFilter.value === 'Active'
+                ? sub.category_isActive === true
+                : sub.category_isActive === false
+        );
+    }
+    return list;
+});
 
 // Modal state
 const isCategoryVisible = ref(false);
 const selectedCategory = ref(null);
-
+const statusFilter = ref('');
 const isUpdateVisible = ref(false);
 const categoryToUpdate = ref(null);
 
 const isDeleteVisible = ref(false);
 const categoryToDelete = ref(null);
 const selectedCategoryIds = ref([]);
+
+
 
 // Add Category
 async function addCategory() {
@@ -284,16 +304,12 @@ async function deleteSelectedCategories() {
                                     <option :value="true">Active</option>
                                 </select>
                             </div>
-
                             <div>
                                 <label class="block mb-1 font-medium">Category Description</label>
                                 <textarea v-model="newCategory.category_description"
                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                                     rows="3" placeholder="Write product description here"></textarea>
                             </div>
-
-
-
                         </div>
 
                         <div>
@@ -321,26 +337,16 @@ async function deleteSelectedCategories() {
                     </form>
                 </div>
             </div>
-
         </div>
-
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
-                <input type="text" placeholder="Search"
+                <input type="text" v-model="searchQuery" placeholder="Search"
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <select
+                <select v-model="statusFilter"
                     class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Filter</option>
-                    <option>By upload date</option>
-                    <option>By Alphabetical</option>
-
-                </select>
-                <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Status</option>
-                    <option>Inactive</option>
-                    <option>Active</option>
-
+                    <option value="">Status</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Active">Active</option>
                 </select>
             </div>
         </div>
@@ -404,7 +410,7 @@ async function deleteSelectedCategories() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="category in categories" :key="category.category_id"
+                                <tr v-for="category in filteredCategories" :key="category.category_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                                     @click.stop="showCategoryModal(category)">
 
@@ -433,9 +439,9 @@ async function deleteSelectedCategories() {
 
                                     <td class="p-4 text-base font-medium whitespace-nowrap">
                                         <span :class="category.category_isActive
-                                            ? 'text-red-600 font-semibold'
-                                            : 'text-green-600 font-semibold'">
-                                            {{ category.category_isActive ? 'Inactive' : 'Active' }}
+                                            ? 'text-green-600 font-semibold'
+                                            : 'text-red-600 font-semibold'">
+                                            {{ category.category_isActive ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
                                     <td
@@ -523,13 +529,7 @@ async function deleteSelectedCategories() {
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.updated_at) }}</textarea>
                                                             </div>
                                                         </div>
-
-
-
                                                         <div class="flex justify-end space-x-2 mt-6">
-                                                            <button type="button"
-                                                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add
-                                                                product</button>
                                                             <button type="button"
                                                                 @click="isCategoryVisible = false; selectedCategory = null"
                                                                 class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
@@ -542,8 +542,6 @@ async function deleteSelectedCategories() {
                                                     </form>
                                                 </div>
                                             </div>
-
-
 
                                             <button type="button" @click.stop="openDeleteModal(category)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900">
