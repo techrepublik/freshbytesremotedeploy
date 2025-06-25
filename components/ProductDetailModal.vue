@@ -96,11 +96,31 @@
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                     <div class="text-xs text-gray-500">Product Status</div>
                     <span
-                        class="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-green-100 text-green-600 rounded">
-                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        class="inline-flex items-center px-2 py-0.5 text-base font-medium rounded"
+                        :class="{
+                            'bg-green-100 text-green-600': selectedProduct.product_status === 'FRESH',
+                            'bg-yellow-100 text-yellow-600': selectedProduct.product_status === 'SLIGHTLY_WITHERED',
+                            'bg-red-100 text-red-400': selectedProduct.product_status === 'ROTTEN'
+                        }"
+                    >
+                        <svg class="w-3 h-3 mr-1"
+                            :class="{
+                                'text-green-600': selectedProduct.product_status === 'FRESH',
+                                'text-yellow-600': selectedProduct.product_status === 'SLIGHTLY_WITHERED',
+                                'text-red-400': selectedProduct.product_status === 'ROTTEN'
+                            }"
+                            fill="currentColor" viewBox="0 0 20 20">
                             <circle cx="10" cy="10" r="10" />
                         </svg>
-                        Fresh
+                        {{
+                            selectedProduct.product_status === 'FRESH'
+                                ? 'Fresh'
+                                : selectedProduct.product_status === 'SLIGHTLY_WITHERED'
+                                ? 'Slightly Withered'
+                                : selectedProduct.product_status === 'ROTTEN'
+                                ? 'Rotten'
+                                : selectedProduct.product_status
+                        }}
                     </span>
                 </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">

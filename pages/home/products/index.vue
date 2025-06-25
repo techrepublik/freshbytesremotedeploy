@@ -590,8 +590,8 @@
                         <ProductUpdateModal
                             :show-update-modal="showUpdateModal"
                             :product-to-update="selectedProduct"
-                            :categories="categories?.value"
-                            :subcategories="subcategories?.value"
+                            :categories="categories"
+                            :subcategories="subcategories"
                             @close-update-modal="closeUpdateModal"
                             @updated="refreshProducts"
                         />
