@@ -52,7 +52,7 @@
 
 <template>
     <div v-if="showUpdateModal && editedProduct"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30"
+     class="fixed inset-0 z-60 flex items-center justify-center bg-gray-800/30"
      @click.self="closeModal">
         <div
         class="bg-white text-gray-900 rounded-lg shadow-lg w-full max-w-2xl p-8 relative h-screen overflow-y-auto"

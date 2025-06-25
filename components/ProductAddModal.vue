@@ -73,7 +73,7 @@
                     <div>
                         <label class="block mb-1 font-medium">Product Name</label>
                         <input type="text"
-                            class="w-full px-3 py-2 rounded   focus:outline-none"
+                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             placeholder="Type product name" v-model="newProduct.product_name" />
                     </div>
                     <div>
@@ -170,7 +170,7 @@
                 </div>
                 <div class="flex justify-end space-x-2 mt-6">
                     <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                        @click="addProduct">Add
+                        @click="onAdd">Add
                         product</button>
                     <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
                         @click="closeAddProductModal">Cancel</button>

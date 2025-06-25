@@ -13,51 +13,51 @@
 
 
 
-const newProduct = ref({
-    seller_id: null,
-    product_name: "",
-    product_price: null,
-    product_brief_description: "",
-    product_full_description: "",
-    product_discountedPrice: null,
-    product_sku: "",
-    product_status: null,
-    product_location: "",
-    category_id: null,
-    sub_category_id: null,
-    quantity: null,
-    post_date: null,
-    harvest_date: null,
-    is_active: true, 
-    review_count: null,
-    top_rated: false,
-    is_discounted: false,
-    is_srp: false,
-    is_deleted: false,
-    sell_count: null,
-    offer_start_date: null,
-    offer_end_date: null,
-    has_promo: false
-});
-
-async function toggleProductActive(product) {
-  product.is_active = !product.is_active;
-  try {
-    await $fetch(`${api}/products/${product.product_id}/`, {
-      method: 'PATCH',
-      body: { is_active: product.is_active }
+    const newProduct = ref({
+        seller_id: null,
+        product_name: "",
+        product_price: null,
+        product_brief_description: "",
+        product_full_description: "",
+        product_discountedPrice: null,
+        product_sku: "",
+        product_status: null,
+        product_location: "",
+        category_id: null,
+        sub_category_id: null,
+        quantity: null,
+        post_date: null,
+        harvest_date: null,
+        is_active: true, 
+        review_count: null,
+        top_rated: false,
+        is_discounted: false,
+        is_srp: false,
+        is_deleted: false,
+        sell_count: null,
+        offer_start_date: null,
+        offer_end_date: null,
+        has_promo: false
     });
-    // Optionally, show a success message here
-  } catch (error) {
-    // If the API fails, revert the change
-    product.is_active = !product.is_active;
-    alert('Failed to update product display status.');
-    console.error(error);
-  }
-}
 
-const { data: users } = useFetch(`${api}/users/`, { server: false });
-const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
+    async function toggleProductActive(product) {
+    product.is_active = !product.is_active;
+    try {
+        await $fetch(`${api}/products/${product.product_id}/`, {
+        method: 'PATCH',
+        body: { is_active: product.is_active }
+        });
+        // Optionally, show a success message here
+    } catch (error) {
+        // If the API fails, revert the change
+        product.is_active = !product.is_active;
+        alert('Failed to update product display status.');
+        console.error(error);
+    }
+    }
+
+    const { data: users } = useFetch(`${api}/users/`, { server: false });
+    const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
 
 
     async function addProduct() {
@@ -225,8 +225,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
 
     console.log("showUpdateModal", showUpdateModal.value);
     function openUpdateModal(product) {
-    selectedProduct.value = product;
-    showUpdateModal.value = true;
+        selectedProduct.value = product;
+        showUpdateModal.value = true;
     }
     
     async function refreshProducts() {
@@ -236,6 +236,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
 
     function closeUpdateModal() {
         showUpdateModal.value = false;
+        showProductModal.value = false;
         selectedProduct.value = null;
     }
 
@@ -249,6 +250,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
     }
     function closeDeleteModal() {
         showDeleteModal.value = false;
+        showProductModal.value = false;
         productToDelete.value = null;
     }
     function formatDate(dateStr) {
@@ -387,7 +389,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
             </div>
         </div>
         <!-- Add Product Modal -->
-        <ProductAddModal :show-add-product-modal="showAddProductModal" :new-product="newProduct" :sellers="sellers" :users="users" :categories="categories" :subcategories="subcategories" @close-add-product-modal="closeAddProductModal"></ProductAddModal>>
+        <ProductAddModal :show-add-product-modal="showAddProductModal" :new-product="newProduct" :sellers="sellers" :users="users" :categories="categories" :subcategories="subcategories" @close-add-product-modal="closeAddProductModal" @add-product="addProduct"/>
 
         <!--Filter Section-->
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
@@ -493,8 +495,8 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="product in products" :key="product.product_id"
-                                    class="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <tr v-for="product in products" :key="product.product_id" 
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" @click="openProductModal(product)">
                                     <!-- Removed row click to avoid masking button clicks -->
                                     <td class="w-4 p-4">
                                         <div class="flex items-center" @click.stop>
@@ -517,8 +519,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                                         {{ product.seller_id }}
                                     </td>
                                     <td
-                                        class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white cursor-pointer"
-                                        @click="openProductModal(product)">
+                                        class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
                                         {{ product.product_name }}
                                     </td>
                                     <td
@@ -595,7 +596,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                             @updated="refreshProducts"
                         />
                         <div v-if="showDeleteModal"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                            class="fixed inset-0 z-60 flex items-center justify-center bg-gray-800/30">
                             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
                                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirm Deletion
                                 </h2>
@@ -617,7 +618,7 @@ const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
                             </div>
                         </div>
                         <!-- Product Details Modal -->
-                        <ProductDetailModal :selected-product="selectedProduct" :show-product-modal="showProductModal" :categories="categories" :subcategories="subcategories" @close-product-modal="closeProductModal"></ProductDetailModal>
+                        <ProductDetailModal :selected-product="selectedProduct" :show-product-modal="showProductModal" :categories="categories" :subcategories="subcategories" @close-product-modal="closeProductModal" @update-product="openUpdateModal" @delete-product="openDeleteModal"></ProductDetailModal>
                         
                         <!-- Delete Selected Modal -->
                         <div v-if="showDeleteSelectedModal"
