@@ -693,43 +693,62 @@
                         <hr class="my-4 border-gray-200 dark:border-gray-700">
 
                         <!-- Pagination -->
-                        <div class="flex items  -center justify-between mb-4">
-                            <!-- Pagination Controls -->
-                            <div class="flex items-center space-x-1">
+                        <div class="flex items-center justify-between mb-4">
+                        <!-- Pagination Controls -->
+                        <nav aria-label="Page navigation">
+                            <ul class="inline-flex items-center -space-x-px">
+                            <!-- Previous Button -->
+                            <li>
                                 <button
-                                class="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-50"
+                                class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
                                 :disabled="currentPage === 1"
                                 @click="goToPage(currentPage - 1)"
                                 >
-                                <span>&lt;</span>
+                                <span class="sr-only">Previous</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
                                 </button>
+                            </li>
+                            <!-- Page Numbers -->
+                            <li v-for="page in Math.min(totalPages, 5)" :key="page">
                                 <button
-                                v-for="page in Math.min(totalPages, 5)"
-                                :key="page"
-                                class="px-3 py-1 rounded border border-gray-200"
+                                class="flex items-center justify-center h-10 w-10 leading-tight border border-gray-300
+                                    hover:bg-gray-100 hover:text-green-700
+                                    focus:z-20 focus:ring-2 focus:ring-green-500
+                                    transition
+                                    "
                                 :class="{
-                                    'bg-blue-50 text-blue-600 border-blue-400': currentPage === page,
-                                    'bg-white text-gray-700 hover:bg-gray-100': currentPage !== page
+                                    'bg-green-50 text-green-600 border-green-400': currentPage === page,
+                                    'bg-white text-gray-500': currentPage !== page
                                 }"
                                 @click="goToPage(page)"
                                 >
                                 {{ page }}
                                 </button>
+                            </li>
+                            <!-- Next Button -->
+                            <li>
                                 <button
-                                class="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-100 disabled:opacity-50"
+                                class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
                                 :disabled="currentPage === totalPages"
                                 @click="goToPage(currentPage + 1)"
                                 >
-                                <span>&gt;</span>
+                                <span class="sr-only">Next</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
                                 </button>
-                            </div>
-                            <!-- Showing Info -->
-                            <div class="text-sm text-gray-500 ml-4">
-                                Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
-                                -
-                                <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
-                                of <span class="font-semibold">{{ total }}</span>
-                            </div>
+                            </li>
+                            </ul>
+                        </nav>
+                        <!-- Showing Info -->
+                        <div class="text-sm text-gray-500 ml-4">
+                            Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
+                            -
+                            <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
+                            of <span class="font-semibold">{{ total }}</span>
+                        </div>
                         </div>
 
                         <!-- Action buttons section (above footer) -->
