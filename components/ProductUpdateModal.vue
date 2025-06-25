@@ -88,14 +88,30 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-700 dark:text-gray-300">Current
-                            Price</label>
-                        <input type="number" class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white" v-model="editedProduct.product_price">
+                        <label class="block text-gray-700 dark:text-gray-300">Current Price</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                            <input
+                                type="number"
+                                class="w-full pl-8 px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white"
+                                v-model="editedProduct.product_price"
+                                min="0"
+                                step="0.01"
+                            >
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-gray-700 dark:text-gray-300">Discounted
-                            Price</label>
-                        <input type="number" class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white" v-model="editedProduct.product_discountedPrice">
+                        <label class="block text-gray-700 dark:text-gray-300">Discounted Price</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                            <input
+                                type="number"
+                                class="w-full pl-8 px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white"
+                                v-model="editedProduct.product_discountedPrice"
+                                min="0"
+                                step="0.01"
+                            >
+                        </div>
                     </div>
                     <div>
                         <label class="block text-gray-700 dark:text-gray-300">Product
