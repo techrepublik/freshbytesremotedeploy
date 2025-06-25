@@ -4,7 +4,7 @@ export const useProducts = () => {
     const subcategories = ref([]);
     const loading = ref(false);
     const error = ref(null);
-    const api = "http://192.168.63.238:8000"; // API HERE
+    const api = "http://192.168.157.238:8000"; // API HERE
 
 
     const fetchDatas = async () => {
