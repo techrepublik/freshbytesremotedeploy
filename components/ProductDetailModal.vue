@@ -197,6 +197,10 @@
                     <div class="font-medium text-gray-900">{{ formatDate(selectedProduct.updated_at)
                     }}</div>
                 </div>
+                <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
+                    <div class="text-xs text-gray-500">Has Promo?</div>
+                    <div class="font-medium text-gray-900">{{ selectedProduct.has_promo }}</div>
+                </div>
             </div>
             <!-- Action Buttons -->
             <div class="flex justify-end space-x-2 mt-6">
