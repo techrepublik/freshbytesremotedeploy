@@ -157,21 +157,77 @@
         allSelected.value = false;
     }
 
-    import { ref, computed } from 'vue';
+    import { ref, computed, watch } from 'vue';
 
     // Reactive variables
+    const searchQuery = ref('');
     const selectedCategory = ref('');
     const selectedSubCategory = ref('');
+    const selectedPrice = ref('');
+    const selectedStatus = ref('');
 
-    // Sub-category map
-    const subCategories = {
-        Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-        Vegetables: ['Root Vegetables', 'Leafy Greens', 'Cruciferous Vegetables', 'Nightshades'],
-    };
+    const filteredSubcategories = computed(() => {
+    if (!selectedCategory.value) return [];
+    return (subcategories.value || []).filter(
+        sub => sub.category_id === selectedCategory.value
+    );
+    });
 
-    // Computed options based on selected category
-    const availableSubCategories = computed(() => {
-        return subCategories[selectedCategory.value] || [];
+    /// Filter subcategories based on selected category
+    const filteredProducts = computed(() => {
+    let list = products.value || [];
+    if (searchQuery.value) {
+        const q = searchQuery.value.toLowerCase();
+        list = list.filter(
+        p =>
+            (p.product_name && p.product_name.toLowerCase().includes(q)) ||
+            (p.product_brief_description && p.product_brief_description.toLowerCase().includes(q)) ||
+            (p.product_location && p.product_location.toLowerCase().includes(q)) ||
+            (p.product_sku && p.product_sku.toLowerCase().includes(q)) ||
+            (p.product_status && p.product_status.toLowerCase().includes(q)) ||
+            // Date and time search
+            (p.post_date && (
+            new Date(p.post_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase().includes(q) ||
+            new Date(p.post_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase().includes(q)
+            )) ||
+            (p.harvest_date && (
+            new Date(p.harvest_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase().includes(q) ||
+            new Date(p.harvest_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase().includes(q)
+            )) ||
+            (p.created_at && (
+            new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase().includes(q) ||
+            new Date(p.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase().includes(q)
+            )) ||
+            (p.updated_at && (
+            new Date(p.updated_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).toLowerCase().includes(q) ||
+            new Date(p.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }).toLowerCase().includes(q)
+            ))
+        );
+    }
+    if (selectedCategory.value) {
+        list = list.filter(p => p.category_id === selectedCategory.value);
+    }
+    if (selectedSubCategory.value) {
+        list = list.filter(p => p.sub_category_id === selectedSubCategory.value);
+    }
+    if (selectedStatus.value && selectedStatus.value !== 'Status') {
+        if (selectedStatus.value === 'Active') list = list.filter(p => p.is_active);
+        else if (selectedStatus.value === 'Inactive') list = list.filter(p => !p.is_active);
+        else if (selectedStatus.value === 'Sale') list = list.filter(p => p.product_status === 'SALE');
+        else if (selectedStatus.value === 'Discounted') list = list.filter(p => p.is_discounted);
+    }
+    // Price sorting
+    if (selectedPrice.value === 'Low to High') {
+        list = [...list].sort((a, b) => a.product_price - b.product_price);
+    } else if (selectedPrice.value === 'High to Low') {
+        list = [...list].sort((a, b) => b.product_price - a.product_price);
+    }
+    return list;
+    });
+
+    // Reset subcategory when category changes
+    watch(selectedCategory, () => {
+    selectedSubCategory.value = '';
     });
 
     const showAddProductModal = ref(false);
@@ -299,15 +355,13 @@
     
     const currentPage = ref(1);
     const pageSize = 20; // or whatever your page size is
-    const total = computed(() => products?.value?.length || 0); // or use your API's total count
-
-    const totalPages = computed(() => Math.ceil(total.value / pageSize));
 
     const paginatedProducts = computed(() => {
-    if (!products.value) return [];
     const start = (currentPage.value - 1) * pageSize;
-    return products.value.slice(start, start + pageSize);
+    return filteredProducts.value.slice(start, start + pageSize);
     });
+    const total = computed(() => filteredProducts.value.length);
+    const totalPages = computed(() => Math.ceil(total.value / pageSize));
 
     function goToPage(page) {
     if (page < 1 || page > totalPages.value) return;
@@ -320,7 +374,7 @@
     <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="loading">
         
         <div role="status">
-            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg>
+            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-green-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg>
             <span class="sr-only">Loading...</span>
         </div>
 
@@ -329,15 +383,17 @@
         <nav class="flex" aria-label="Breadcrumb">
             <ol class="inline-flex items-center space-x-1 md:space-x-2 rtl:space-x-reverse">
                 <li class="inline-flex items-center">
-                    <a href="#"
-                        class="inline-flex items-center text-sm font-medium text-gray-800 hover:text-green-800 dark:text-gray-400 dark:hover:text-white">
+                    <NuxtLink
+                        to="/home"
+                        class="inline-flex items-center text-sm font-medium text-gray-800 hover:text-green-800 dark:text-gray-400 dark:hover:text-white"
+                    >
                         <svg class="w-3 h-3 me-2.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
                             fill="currentColor" viewBox="0 0 20 20">
                             <path
                                 d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z" />
                         </svg>
                         Home
-                    </a>
+                    </NuxtLink>
                 </li>
                 <li>
                     <div class="flex items-center">
@@ -432,37 +488,66 @@
         <!--Filter Section-->
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
-                <input type="text" placeholder="Search"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
-                <select v-model="selectedCategory"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <option value="">Select Category</option>
-                    <option value="Fruits">Fruits</option>
-                    <option value="Vegetables">Vegetables</option>
+                <input
+                type="text"
+                v-model="searchQuery"
+                placeholder="Search"
+                class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <select
+                v-model="selectedCategory"
+                class="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none"
+                >
+                <option value="">Select Category</option>
+                <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
+                    {{ cat.category_name }}
+                </option>
                 </select>
-
-                <select v-model="selectedSubCategory"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    :disabled="!selectedCategory">
+                <select
+                    v-model="selectedSubCategory"
+                    class="px-4 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none"
+                    :disabled="!selectedCategory"
+                    >
                     <option value="">Select Sub-Category</option>
-                    <option v-for="(sub, index) in availableSubCategories" :key="index" :value="sub">
-                        {{ sub }}
+                    <option
+                        v-for="sub in filteredSubcategories"
+                        :key="sub.sub_category_id"
+                        :value="sub.sub_category_id"
+                    >
+                        {{ sub.sub_category_name }}
                     </option>
+                    </select>
+                <select
+                v-model="selectedPrice"
+                class="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none"
+                >
+                <option value="">Price</option>
+                <option>Low to High</option>
+                <option>High to Low</option>
                 </select>
                 <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <option>Price</option>
-                    <option>Low to High</option>
-                    <option>High to Low</option>
+                v-model="selectedStatus"
+                class="px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none"
+                >
+                <option value="">Status</option>
+                <option>Inactive</option>
+                <option>Active</option>
+                <option>Sale</option>
+                <option>Discounted</option>
                 </select>
-                <select
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <option>Status</option>
-                    <option>Inactive</option>
-                    <option>Active</option>
-                    <option>Sale</option>
-                    <option>Discounted</option>
-                </select>
+                <!-- Clear Button -->
+                <button
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                    @click="
+                        searchQuery = '';
+                        selectedCategory = '';
+                        selectedSubCategory = '';
+                        selectedPrice = '';
+                        selectedStatus = '';
+                    "
+                >
+                    Clear
+                </button>
             </div>
             <div class="flex items-center space-x-2 mt-2">
                 <button
@@ -524,7 +609,7 @@
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
-                                        Status
+                                        Display Status
                                     </th>
                                     <th scope="col"
                                         class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
@@ -694,13 +779,12 @@
 
                         <!-- Pagination -->
                         <div class="flex items-center justify-between mb-4">
-                        <!-- Pagination Controls -->
-                        <nav aria-label="Page navigation">
+                        <!-- Pagination Controls (left, arrows and page numbers) -->
+                        <div>
                             <ul class="inline-flex items-center -space-x-px">
-                            <!-- Previous Button -->
                             <li>
                                 <button
-                                class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
                                 :disabled="currentPage === 1"
                                 @click="goToPage(currentPage - 1)"
                                 >
@@ -710,14 +794,12 @@
                                 </svg>
                                 </button>
                             </li>
-                            <!-- Page Numbers -->
                             <li v-for="page in Math.min(totalPages, 5)" :key="page">
                                 <button
                                 class="flex items-center justify-center h-10 w-10 leading-tight border border-gray-300
                                     hover:bg-gray-100 hover:text-green-700
                                     focus:z-20 focus:ring-2 focus:ring-green-500
-                                    transition
-                                    "
+                                    transition"
                                 :class="{
                                     'bg-green-50 text-green-600 border-green-400': currentPage === page,
                                     'bg-white text-gray-500': currentPage !== page
@@ -727,10 +809,9 @@
                                 {{ page }}
                                 </button>
                             </li>
-                            <!-- Next Button -->
                             <li>
                                 <button
-                                class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+                                class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
                                 :disabled="currentPage === totalPages"
                                 @click="goToPage(currentPage + 1)"
                                 >
@@ -740,19 +821,44 @@
                                 </svg>
                                 </button>
                             </li>
+                            <!-- Showing Info -->
+                            <li class="text-sm text-gray-600 ml-4">
+                                Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
+                                -
+                                <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
+                                of <span class="font-semibold">{{ total }}</span>
+                            </li>
                             </ul>
-                        </nav>
-                        <!-- Showing Info -->
-                        <div class="text-sm text-gray-500 ml-4">
-                            Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
-                            -
-                            <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
-                            of <span class="font-semibold">{{ total }}</span>
+                        </div>
+                        <!-- Green Buttons (right) -->
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center space-x-2">
+                            <button
+                                class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+                                :disabled="currentPage === 1"
+                                @click="goToPage(currentPage - 1)"
+                            >
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </button>
+                            <button
+                                class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+                                :disabled="currentPage === totalPages"
+                                @click="goToPage(currentPage + 1)"
+                            >
+                                Next
+                                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                            </div>
                         </div>
                         </div>
 
                         <!-- Action buttons section (above footer) -->
-                        <div class="flex justify-end items-center space-x-4 mb-4">
+                        <div class="flex justify-end items-center space-x-4 mb-22">
                             <button class="text-sm text-gray-600 hover:underline">Print barcodes</button>
                             <button class="text-sm text-gray-600 hover:underline">Duplicate</button>
                             <button
