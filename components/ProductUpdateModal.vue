@@ -1,4 +1,6 @@
 <script setup>
+    import { ref, watch } from 'vue'
+
     const props = defineProps({
         showUpdateModal: { type: Boolean, required: true },
         productToUpdate: { type: Object, default: () => null },
@@ -47,6 +49,36 @@
             alert('Failed to update product.');
             console.error(error);
         }
+    }
+
+    const locationQuery = ref(editedProduct.value.product_location || '')
+    const locationSuggestions = ref([])
+    let debounceTimeout = null
+
+    // Keep input in sync with editedProduct
+    watch(() => editedProduct.value.product_location, (val) => {
+        if (val !== locationQuery.value) locationQuery.value = val || ''
+    })
+
+    // Debounced search for location suggestions
+    watch(locationQuery, (query) => {
+        clearTimeout(debounceTimeout)
+        if (!query) {
+            locationSuggestions.value = []
+            return
+        }
+        debounceTimeout = setTimeout(async () => {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+            locationSuggestions.value = await res.json()
+        }, 400)
+    })
+
+    // When a suggestion is clicked
+    function selectLocation(suggestion) {
+        editedProduct.value.product_location = suggestion.display_name
+        locationQuery.value = suggestion.display_name
+        locationSuggestions.value = []
     }
 </script>
 
@@ -124,9 +156,26 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-gray-700 dark:text-gray-300">Product
-                            Location</label>
-                        <input type="text" class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white" v-model="editedProduct.product_location">
+                        <label class="block text-gray-700 dark:text-gray-300">Product Location</label>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 dark:bg-gray-700 dark:text-white"
+                                placeholder="Type your Product Location"
+                                v-model="locationQuery"
+                                autocomplete="off"
+                            />
+                            <ul v-if="locationSuggestions.length"
+                                class="absolute bg-white border border-gray-300 rounded shadow mt-1 z-50 w-full max-h-48 overflow-auto">
+                                <li v-for="suggestion in locationSuggestions"
+                                    :key="suggestion.place_id || suggestion.osm_id"
+                                    @click="selectLocation(suggestion)"
+                                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                >
+                                    {{ suggestion.display_name }}
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-gray-700 dark:text-gray-300">Quantity</label>

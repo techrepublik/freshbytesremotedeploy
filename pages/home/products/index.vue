@@ -23,7 +23,6 @@
         product_sku: "",
         product_status: null,
         product_location: "",
-        category_id: null,
         sub_category_id: null,
         quantity: null,
         post_date: null,
@@ -64,7 +63,7 @@
     // Validate required fields
     if (
         !newProduct.value.product_name ||
-        !newProduct.value.category_id ||
+        !newProduct.value.sub_category_id ||
         !newProduct.value.product_price ||
         !newProduct.value.product_status ||
         !newProduct.value.quantity ||

@@ -1,5 +1,7 @@
 <script setup>
-    defineProps({
+    import { ref, watch } from 'vue'
+
+    const props = defineProps({
         showAddProductModal: {
             type: Boolean,
             required: true
@@ -37,6 +39,35 @@
     function closeAddProductModal() {
         emit('closeAddProductModal')
     }
+
+    let debounceTimeout = null
+
+    const locationQuery = ref('')
+    const locationSuggestions = ref([])
+
+    watch(locationQuery, (query) => {
+        clearTimeout(debounceTimeout)
+        if (!query) {
+            locationSuggestions.value = []
+            return
+        }
+        debounceTimeout = setTimeout(async () => {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
+            locationSuggestions.value = await res.json()
+        }, 400) // 400ms debounce
+    })
+
+    function selectLocation(suggestion) {
+        props.newProduct.product_location = suggestion.display_name
+        locationQuery.value = suggestion.display_name
+        locationSuggestions.value = []
+    }
+
+    // Keep input in sync with newProduct
+    watch(() => props.newProduct.product_location, (val) => {
+        if (val !== locationQuery.value) locationQuery.value = val || ''
+    })
 
     function formatDate(dateStr) {
         if (!dateStr) return 'N/A';
@@ -77,16 +108,6 @@
                             placeholder="Type product name" v-model="newProduct.product_name" />
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Category</label>
-                        <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            v-model="newProduct.category_id">
-                            <option disabled value="">Select category</option>
-                            <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
-                                {{ cat.category_name }}
-                            </option>
-                        </select>
-                    </div>
-                    <div>
                         <label class="block mb-1 font-medium">Sub-Category</label>
                         <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             v-model="newProduct.sub_category_id">
@@ -121,9 +142,25 @@
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Product Location</label>
-                        <input type="text"
-                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            placeholder="Type your Product Location" v-model="newProduct.product_location" />
+                        <div class="relative">
+                            <input
+                                type="text"
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                placeholder="Type your Product Location"
+                                v-model="locationQuery"
+                                autocomplete="off"
+                            />
+                            <ul v-if="locationSuggestions.length"
+                                class="absolute bg-white border border-gray-300 rounded shadow mt-1 z-50 w-full max-h-48 overflow-auto">
+                                <li v-for="suggestion in locationSuggestions"
+                                    :key="suggestion.place_id || suggestion.osm_id"
+                                    @click="selectLocation(suggestion)"
+                                    class="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                >
+                                    {{ suggestion.display_name }}
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Quantity</label>
