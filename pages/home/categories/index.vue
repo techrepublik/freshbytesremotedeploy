@@ -583,8 +583,8 @@ async function deleteSelectedCategories() {
                                             class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
                                             <option disabled value="">Select Category Status
                                             </option>
-                                            <option :value="false">Active</option>
-                                            <option :value="true">Inactive</option>
+                                            <option :value="false">Inactive</option>
+                                            <option :value="true">Active</option>
                                         </select>
                                     </div>
                                     <div>
@@ -689,6 +689,4 @@ async function deleteSelectedCategories() {
             </div>
         </div>
     </div>
-
-
 </template>
