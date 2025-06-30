@@ -134,8 +134,9 @@
                 </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                     <div class="text-xs text-gray-500">Discounted Price</div>
-                    <div class="font-medium text-gray-900">₱{{
-                        selectedProduct.product_discountedPrice }}</div>
+                    <div class="font-medium text-gray-900">
+                        ₱{{ selectedProduct.product_discountedPrice ? selectedProduct.product_discountedPrice : '0.00' }}
+                    </div>
                 </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                     <div class="text-xs text-gray-500">Product Location</div>
