@@ -348,6 +348,7 @@ async function deleteSelectedCategories() {
                     <option value="Inactive">Inactive</option>
                     <option value="Active">Active</option>
                 </select>
+                
             </div>
         </div>
         <div class="flex justify-end mb-4">
@@ -498,35 +499,39 @@ async function deleteSelectedCategories() {
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
                                                                     {{ selectedCategory?.category_name }}
                                                                 </div>
-
                                                             </div>
                                                             <div>
                                                                 <label class="block mb-1 font-medium">Category
                                                                     Status</label>
                                                                 <div
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                    {{ selectedCategory?.category_isActive ? 'Inactive'
-                                                                        : 'Active' }}
+                                                                    {{ selectedCategory?.category_isActive ? 'Active'
+                                                                        : 'Inactive' }}
                                                                 </div>
                                                             </div>
-
-
                                                             <div>
                                                                 <label class="block mb-1 font-medium">Category
                                                                     Description</label>
                                                                 <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedCategory?.description }}</textarea>
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedCategory?.category_description }}</textarea>
                                                             </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Created at</label>
-                                                                <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.created_at) }}</textarea>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Updated
-                                                                    at</label>
-                                                                <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.updated_at) }}</textarea>
+                                                            <div class="col-span-2">
+                                                                <h2
+                                                                    class="text-base font-semibold mb-2 text-gray-900 dark:text-white">
+                                                                    Dates</h2>
+                                                                <div class="grid grid-cols-2 gap-4"></div>
+                                                                <div>
+                                                                    <label class="block mb-1 font-medium">Created
+                                                                        at</label>
+                                                                    <textarea rows="3" disabled
+                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.created_at) }}</textarea>
+                                                                </div>
+                                                                <div>
+                                                                    <label class="block mb-1 font-medium">Updated
+                                                                        at</label>
+                                                                    <textarea rows="3" disabled
+                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.updated_at) }}</textarea>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div class="flex justify-end space-x-2 mt-6">
@@ -572,7 +577,7 @@ async function deleteSelectedCategories() {
                                             <label class="block text-gray-700 dark:text-gray-300">Category
                                                 Name</label>
                                             <input type="text" v-model="categoryToUpdate.category_name"
-                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                                 :placeholder="categoryToUpdate?.category_name || 'Category Name'">
                                         </div>
                                     </div>
@@ -591,7 +596,7 @@ async function deleteSelectedCategories() {
                                         <label class="block text-gray-700 dark:text-gray-300">Created
                                             At</label>
                                         <input type="text"
-                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                             :placeholder="formatDate(categoryToUpdate?.created_at) || 'Created Date'"
                                             disabled>
                                     </div>
@@ -599,7 +604,7 @@ async function deleteSelectedCategories() {
                                         <label class="block text-gray-700 dark:text-gray-300">Category
                                             Description</label>
                                         <textarea
-                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                             rows="4" v-model="categoryToUpdate.category_description"
                                             :placeholder="categoryToUpdate?.category_description || 'Category Description'"></textarea>
                                     </div>

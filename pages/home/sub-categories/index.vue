@@ -8,7 +8,7 @@ const config = useRuntimeConfig()
 const api = config.public.API_LINK
 
 
-const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
+
 const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
 const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
 
@@ -286,7 +286,7 @@ async function deleteSelectedCategories() {
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300">Category</label>
                             <select v-model="newSubCategory.category_id"
-                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white">
+                               class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">
                                 <option disabled value="">Select Category</option>
                                 <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
                                     {{ cat.category_name }}
@@ -328,9 +328,6 @@ async function deleteSelectedCategories() {
                 </form>
             </div>
         </div>
-
-
-
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div class="flex gap-2 flex-wrap">
                 <input type="text" v-model="searchQuery" placeholder="Search"
@@ -404,7 +401,7 @@ async function deleteSelectedCategories() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                               <tr v-for="subcategory in filteredSubcategories" :key="subcategory.sub_category_id"
+                                <tr v-for="subcategory in filteredSubcategories" :key="subcategory.sub_category_id"
                                     class="hover:bg-gray-100 dark:hover:bg-gray-700"
                                     @click="showCategoryModal(subcategory)">
 
@@ -487,24 +484,31 @@ async function deleteSelectedCategories() {
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
                                                                     {{ selectedSubCategory?.sub_category_name }}
                                                                 </div>
-
                                                             </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Category
-                                                                    Description</label>
+                                                            <div class="col-span-2">
+                                                                <label
+                                                                    class="block mt-2 mb-1 font-medium">Description</label>
                                                                 <textarea rows="3" disabled
                                                                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedSubCategory?.sub_category_description }}</textarea>
                                                             </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Created at</label>
-                                                                <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.created_at) }}</textarea>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Updated
-                                                                    at</label>
-                                                                <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.updated_at) }}</textarea>
+                                                            <div class="col-span-2">
+                                                                <h2
+                                                                    class="text-base font-semibold mb-2 text-gray-900 dark:text-white">
+                                                                    Dates</h2>
+                                                                <div class="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <label class="block mb-1 font-medium">Created
+                                                                            at</label>
+                                                                        <textarea rows="3" disabled
+                                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.created_at) }}</textarea>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="block mb-1 font-medium">Updated
+                                                                            at</label>
+                                                                        <textarea rows="3" disabled
+                                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.updated_at) }}</textarea>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div class="flex justify-end space-x-2 mt-6">
@@ -543,7 +547,6 @@ async function deleteSelectedCategories() {
                                 <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you
                                     want to delete this category?<br>
                                     This action cannot be undone.</p>
-
                                 <div class="flex justify-end gap-2">
                                     <button @click="isDeleteVisible = false; subcategoryToDelete = null"
                                         class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
@@ -568,7 +571,7 @@ async function deleteSelectedCategories() {
                                             <label class="block text-gray-700 dark:text-gray-300">Sub-Category
                                                 Name</label>
                                             <input type="text" v-model="subcategoryToUpdate.sub_category_name"
-                                                class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                                 :placeholder="subcategoryToUpdate?.sub_category_name || 'Sub-Category Name'">
                                         </div>
                                     </div>
@@ -577,7 +580,7 @@ async function deleteSelectedCategories() {
                                         <label class="block text-gray-700 dark:text-gray-300">Created
                                             At</label>
                                         <input type="text"
-                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                             :placeholder="formatDate(subcategoryToUpdate?.created_at) || 'Created Date'"
                                             disabled>
                                     </div>
@@ -585,7 +588,7 @@ async function deleteSelectedCategories() {
                                         <label class="block text-gray-700 dark:text-gray-300">Category
                                             Description</label>
                                         <textarea
-                                            class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                             rows="4" v-model="subcategoryToUpdate.sub_category_description"
                                             :placeholder="subcategoryToUpdate?.sub_category_description || 'Sub-Category Description'"></textarea>
                                     </div>
