@@ -1,12 +1,10 @@
 <script setup>
-  import { ref, watch, computed } from 'vue'
+    definePageMeta({
+        layout: "home",
+    });
 
-  definePageMeta({
-    layout: 'home',
-  })
-
-  const config = useRuntimeConfig();
-  const api = config.public.API_LINK;
+    const config = useRuntimeConfig();
+    const api = config.public.API_LINK; // API HERE
 
   // Filters
   const search = ref('')
@@ -22,52 +20,52 @@
     return params.toString() ? `?${params.toString()}` : ''
   })
 
-  // Fetch users from your API with filters
+  // Fetch sellers from your API with filters
   const { data, pending, error, refresh } = await useFetch(
-    () => `${api}/users/${queryString.value}`,
+    () => `${api}/sellers/${queryString.value}`,
     { server: false }
   )
 
   const loading = computed(() => pending.value);
 
-  const users = ref([])
+  const sellers = ref([])
 
   watch(data, (val) => {
     if (val) {
-      users.value = (Array.isArray(val) ? val : val.users || []).map(u => ({
-        user_id: u.user_id,
-        user_name: u.user_name,
-        avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.user_name)}`,
-        user_email: u.user_email,
-        role: u.is_admin ? 'Admin' : (u.is_seller ? 'Seller' : 'User'),
-        status: u.is_active ? 'Active' : 'Inactive',
+      sellers.value = (Array.isArray(val) ? val : val.sellers || []).map(u => ({
+        seller_id: s.seller_id,
+        seller_name: s.seller_name,
+        avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.seller_name)}`,
+        seller_email: u.seller_email,
+        role: s.is_admin ? 'Admin' : (s.is_seller ? 'Seller' : 'User'),
+        status: s.is_active ? 'Active' : 'Inactive',
         selected: false
       }))
     }
   }, { immediate: true })
 
-  // Refetch users when filters change
+  // Refetch sellers when filters change
   watch([search, selectedRole, selectedStatus], () => {
     refresh()
   })
 
   const allSelected = computed({
-    get: () => users.value.length > 0 && users.value.every(u => u.selected),
+    get: () => sellers.value.length > 0 && sellers.value.every(s => s.selected),
     set: (val) => {
-      users.value.forEach(u => u.selected = val)
+      sellers.value.forEach(s => s.selected = val)
     }
   })
 
-  const anySelected = computed(() => users.value.some(u => u.selected))
-  const selectedCount = computed(() => users.value.filter(u => u.selected).length)
+  const anySelected = computed(() => sellers.value.some(s => s.selected))
+  const selectedCount = computed(() => sellers.value.filter(s => s.selected).length)
 
-  function editUser(user) {
-    alert('Edit user: ' + user.user_id)
+  function editSeller(seller) {
+    alert('Edit seller: ' + seller.seller_id)
   }
-  function deleteUser(user) {
-    if (confirm(`Are you sure you want to delete user "${user.user_name}"?`)) {
+  function deleteSeller(seller) {
+    if (confirm(`Are you sure you want to delete seller "${seller.seller_name}"?`)) {
       // Your delete logic here
-      alert('Deleted user: ' + user.user_id)
+      alert('Deleted seller: ' + user.user_id)
     }
   }
   function deleteSelectedUsers() {
