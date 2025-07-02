@@ -87,12 +87,20 @@
         newProduct.value.sell_count = 0;
     }
 
-    console.log(newProduct.value);
+          // Build FormData
+    const formData = new FormData();
+    for (const key in newProduct.value) {
+        formData.append(key, newProduct.value[key]);
+    }
+    // Add images
+    productImages.value.forEach(file => {
+        formData.append('images', file);
+    });
 
     try {
         await $fetch(`${api}/products/`, {
         method: 'POST',
-        body: newProduct.value,
+        body: formData,
         });
         await refreshNuxtData();
         closeAddProductModal();
@@ -101,6 +109,8 @@
         console.error('API error:', error.data || error);
     }
     }
+
+    console.log(newProduct.value);
 
     async function deleteSingleProduct() {
     if (!productToDelete.value) return;
@@ -262,6 +272,9 @@
             offer_end_date: null,
             has_promo: false
         };
+        // Clear product images and previews
+        productImages.value = [];
+        // If you have a preview ref in the modal, emit an event to clear it as well
     }
 
     const showProductModal = ref(false);
@@ -365,6 +378,23 @@
     function goToPage(page) {
     if (page < 1 || page > totalPages.value) return;
     currentPage.value = page;
+    }
+
+    const productImages = ref([]) // Array of File objects
+    async function handleAddProduct() {
+    const formData = new FormData();
+    // Add product fields
+    for (const key in newProduct.value) {
+        formData.append(key, newProduct.value[key]);
+    }
+    // Add images
+    productImages.value.forEach(file => {
+        formData.append('images', file);
+    });
+    await $fetch(`${api}/products/`, {
+        method: 'POST',
+        body: formData,
+    });
     }
 
 </script>
@@ -482,7 +512,7 @@
             </div>
         </div>
         <!-- Add Product Modal -->
-        <ProductAddModal :show-add-product-modal="showAddProductModal" :new-product="newProduct" :sellers="sellers" :users="users" :categories="categories" :subcategories="subcategories" @close-add-product-modal="closeAddProductModal" @add-product="addProduct"/>
+        <ProductAddModal :show-add-product-modal="showAddProductModal" :new-product="newProduct" :sellers="sellers" :users="users" :categories="categories" :subcategories="subcategories" @close-add-product-modal="closeAddProductModal" @add-product="addProduct" @update:productImages="val => productImages.value = val"/>
 
         <!--Filter Section-->
         <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
