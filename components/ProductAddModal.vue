@@ -34,6 +34,7 @@
     // wrap the emit so the template can call it
     function onAdd() {
         emit('addProduct')
+        emit('update:productImages', filesArray)
     }
 
     function closeAddProductModal() {
@@ -69,6 +70,13 @@
         if (val !== locationQuery.value) locationQuery.value = val || ''
     })
 
+    // In ProductAddModal.vue
+    watch(() => props.showAddProductModal, (val) => {
+    if (!val) {
+        productImagesPreview.value = [];
+    }
+    });
+
     function formatDate(dateStr) {
         if (!dateStr) return 'N/A';
         const date = new Date(dateStr);
@@ -79,6 +87,44 @@
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
+        });
+    }
+
+    // Add this near your other refs
+    const productImages = ref([]) // Array of File objects
+    const productImagesPreview = ref([]) // Array of preview URLs
+
+    function onProductImagesChange(e) {
+        const files = Array.from(e.target.files);
+        // Add new files to the existing ones, avoiding duplicates by name+size
+        const existing = productImages.value.map(f => f.name + f.size);
+        files.forEach(file => {
+            if (!existing.includes(file.name + file.size)) {
+            productImages.value.push(file);
+            const reader = new FileReader();
+            reader.onload = ev => productImagesPreview.value.push(ev.target.result);
+            reader.readAsDataURL(file);
+            }
+        });
+        // Reset input value so the same file can be selected again if needed
+        e.target.value = '';
+    }
+
+    function removeImage(idx) {
+        productImages.value.splice(idx, 1);
+        productImagesPreview.value.splice(idx, 1);
+    }
+
+    function onProductImagesDrop(e) {
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        const existing = productImages.value.map(f => f.name + f.size);
+        files.forEach(file => {
+            if (!existing.includes(file.name + file.size)) {
+            productImages.value.push(file);
+            const reader = new FileReader();
+            reader.onload = ev => productImagesPreview.value.push(ev.target.result);
+            reader.readAsDataURL(file);
+            }
         });
     }
 </script>
@@ -196,13 +242,51 @@
                 <div>
                     <label class="block mb-1 font-medium">Product Images</label>
                     <div
-                        class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" stroke-width="2"
-                            viewBox="0 0 24 24">
+                        :class="[
+                        'w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center bg-gray-50 cursor-pointer transition relative',
+                        productImagesPreview.length ? 'overflow-x-auto' : 'text-gray-400'
+                        ]"
+                        @click="$refs.productImagesInput.click()"
+                        @dragover.prevent
+                        @drop.prevent="onProductImagesDrop"
+                    >
+                        <template v-if="!productImagesPreview.length">
+                        <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M12 4v16m8-8H4" />
                         </svg>
                         <span class="font-semibold">Click to upload</span> or drag and drop
                         <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX. 800×400px)</div>
+                        </template>
+                        <template v-else>
+                        <div class="flex flex-wrap gap-2 justify-center items-center w-full h-full">
+                            <div
+                            v-for="(img, idx) in productImagesPreview"
+                            :key="idx"
+                            class="relative w-20 h-20 rounded overflow-hidden border bg-white flex items-center justify-center"
+                            >
+                            <img :src="img" class="object-cover w-full h-full" />
+                            <button
+                                type="button"
+                                class="absolute top-0 right-0 bg-white bg-opacity-80 hover:bg-red-500 hover:text-white text-gray-700 rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                                @click.stop="removeImage(idx)"
+                                title="Remove image"
+                            >
+                                &times;
+                            </button>
+                            </div>
+                        </div>
+                        <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-500">
+                            Images uploaded ({{ productImagesPreview.length }})
+                        </span>
+                        </template>
+                        <input
+                        ref="productImagesInput"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        class="hidden"
+                        @change="onProductImagesChange"
+                        />
                     </div>
                 </div>
                 <div class="flex justify-end space-x-2 mt-6">

@@ -168,6 +168,23 @@
 
   function handleUserAddSuccess() { refresh() }
 
+  const showTooltip = ref(false);
+    
+  const currentPage = ref(1);
+  const pageSize = 20; // or whatever your page size is
+
+  const paginatedUsers = computed(() => {
+    const start = (currentPage.value - 1) * pageSize;
+    return users.value.slice(start, start + pageSize);
+  });
+  const total = computed(() => users.value.length);
+  const totalPages = computed(() => Math.ceil(total.value / pageSize));
+
+  function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
+  }
+
 </script>
 
 <template>
@@ -287,7 +304,7 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr v-for="user in users" :key="user.user_id">
+        <tr v-for="user in paginatedUsers" :key="user.user_id">
           <td class="px-4 py-3">
             <input
               class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
@@ -357,4 +374,110 @@
       </tbody>
     </table>
   </div>
+  <!-- Divider -->
+  <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+  <!-- Pagination -->
+  <div class="flex items-center justify-between mb-4">
+  <!-- Pagination Controls (left, arrows and page numbers) -->
+  <div>
+      <ul class="inline-flex items-center -space-x-px">
+      <li>
+          <button
+          class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+          >
+          <span class="sr-only">Previous</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          </button>
+      </li>
+      <li v-for="page in Math.min(totalPages, 5)" :key="page">
+          <button
+          class="flex items-center justify-center h-10 w-10 leading-tight border border-gray-300
+              hover:bg-gray-100 hover:text-green-700
+              focus:z-20 focus:ring-2 focus:ring-green-500
+              transition"
+          :class="{
+              'bg-green-50 text-green-600 border-green-400': currentPage === page,
+              'bg-white text-gray-500': currentPage !== page
+          }"
+          @click="goToPage(page)"
+          >
+          {{ page }}
+          </button>
+      </li>
+      <li>
+          <button
+          class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
+          :disabled="currentPage === totalPages"
+          @click="goToPage(currentPage + 1)"
+          >
+          <span class="sr-only">Next</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          </button>
+      </li>
+      <!-- Showing Info -->
+      <li class="text-sm text-gray-600 ml-4">
+          Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          -
+          <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
+          of <span class="font-semibold">{{ total }}</span>
+      </li>
+      </ul>
+  </div>
+  <!-- Green Buttons (right) -->
+  <div class="flex items-center space-x-6">
+      <div class="flex items-center space-x-2">
+      <button
+          class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+      >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Previous
+      </button>
+      <button
+          class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+          :disabled="currentPage === totalPages"
+          @click="goToPage(currentPage + 1)"
+      >
+          Next
+          <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+      </button>
+      </div>
+  </div>
+  </div>
+  <!-- Footer -->
+  <footer
+      class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
+      <div class="flex items-center space-x-4">
+          <span>© 2025 FreshBytes. All rights reserved.</span>
+          <a href="#" class="hover:underline">Privacy Policy</a>
+          <a href="#" class="hover:underline">API</a>
+          <a href="#" class="hover:underline">Contact</a>
+      </div>
+
+      <div class="flex items-center space-x-2 mt-2 md:mt-0">
+          <select class="text-sm bg-transparent focus:outline-none dark:text-white">
+              <option selected>English (US)</option>
+              <!-- Add more language options -->
+          </select>
+          <button class="text-gray-500 dark:text-gray-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 4v16m8-8H4" />
+              </svg>
+          </button>
+      </div>
+  </footer>
 </template>
