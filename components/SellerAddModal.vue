@@ -11,13 +11,13 @@
 
     const loading = ref(false)
     const form = ref({
-        user_name: '',
+        seller_name: '',
         first_name: '',
         last_name: '',
-        user_email: '',
-        user_password: '',
-        user_phone: '',
-        user_address: '',
+        seller_email: '',
+        seller_password: '',
+        seller_phone: '',
+        seller_address: '',
         avatar: null,
     })
     const avatarPreview = ref(null)
@@ -25,13 +25,13 @@
     watch(() => props.show, (val) => {
         if (val) {
             Object.assign(form.value, {
-            user_name: '',
+            seller_name: '',
             first_name: '',
             last_name: '',
-            user_email: '',
-            user_password: '',
-            user_phone: '',
-            user_address: '',
+            seller_email: '',
+            seller_password: '',
+            seller_phone: '',
+            seller_address: '',
             avatar: null,
             })
             avatarPreview.value = null
@@ -61,14 +61,14 @@
                 formData.append(key, form.value[key])
             }
             }
-            await $fetch(`${props.api}/users/`, {
+            await $fetch(`${props.api}/sellers/`, {
             method: 'POST',
             body: formData,
             })
             emit('success')
             emit('close')
         } catch (err) {
-            alert('Failed to add user')
+            alert('Failed to add seller')
         } finally {
             loading.value = false
         }
@@ -77,14 +77,22 @@
 </script>
 
 <template>
-<!-- Add User Modal -->
+<!-- Add Seller Modal -->
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-8 relative">
-      <h2 class="text-xl font-semibold mb-4">Add User</h2>
+      <button
+        @click="$emit('close')"
+        type="button"
+        class="absolute top-7 right-8 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+      <h2 class="text-xl font-semibold mb-4">Add Seller</h2>
       <form @submit.prevent="submit" class="space-y-3">
         <div>
-          <label class="block font-medium mb-1">Username</label>
-          <input v-model="form.user_name" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Type username" />
+          <label class="block font-medium mb-1">Seller name</label>
+          <input v-model="form.seller_name" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Type seller name" />
         </div>
         <div class="flex gap-2">
           <div class="flex-1">
@@ -98,19 +106,19 @@
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Email</label>
-          <input v-model="form.user_email" type="email" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Email" />
+          <input v-model="form.seller_email" type="email" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Email" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Password</label>
-          <input v-model="form.user_password" type="password" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Password" />
+          <input v-model="form.seller_password" type="password" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Password" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Phone Number</label>
-          <input v-model="form.user_phone" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Phone Number" />
+          <input v-model="form.seller_phone" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Phone Number" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Home Address</label>
-          <input v-model="form.user_address" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Home Address" />
+          <input v-model="form.seller_address" required class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none" placeholder="Home Address" />
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">Avatar</label>
@@ -133,7 +141,7 @@
                 class="px-6 h-12 text-base rounded bg-green-600 text-white hover:bg-green-700"
             >
                 <span v-if="loading">Saving...</span>
-                <span v-else>Add User</span>
+                <span v-else>Add Seller</span>
             </button>
         </div>
       </form>

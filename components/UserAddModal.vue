@@ -80,6 +80,14 @@
 <!-- Add User Modal -->
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-xl p-8 relative">
+      <button
+        @click="$emit('close')"
+        type="button"
+        class="absolute top-7 right-8 text-gray-400 hover:text-gray-700 text-2xl font-bold focus:outline-none"
+        aria-label="Close"
+      >
+        &times;
+      </button>
       <h2 class="text-xl font-semibold mb-4">Add User</h2>
       <form @submit.prevent="submit" class="space-y-3">
         <div>

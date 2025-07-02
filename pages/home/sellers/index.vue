@@ -35,7 +35,7 @@
       sellers.value = (Array.isArray(val) ? val : val.sellers || []).map(u => ({
         seller_id: s.seller_id,
         seller_name: s.seller_name,
-        avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.seller_name)}`,
+        avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.seller_name)}`,
         seller_email: u.seller_email,
         role: s.is_admin ? 'Admin' : (s.is_seller ? 'Seller' : 'User'),
         status: s.is_active ? 'Active' : 'Inactive',
@@ -65,106 +65,123 @@
   function deleteSeller(seller) {
     if (confirm(`Are you sure you want to delete seller "${seller.seller_name}"?`)) {
       // Your delete logic here
-      alert('Deleted seller: ' + user.user_id)
+      alert('Deleted seller: ' + seller.seller_id)
     }
   }
-  function deleteSelectedUsers() {
-    if (confirm(`Are you sure you want to delete ${selectedCount.value} selected user(s)?`)) {
+  function deleteSelectedSellers() {
+    if (confirm(`Are you sure you want to delete ${selectedCount.value} selected seller(s)?`)) {
       // Your bulk delete logic here
-      alert('Deleted users: ' + users.value.filter(u => u.selected).map(u => u.user_id).join(', '))
+      alert('Deleted sellers: ' + sellers.value.filter(s => s.selected).map(s => s.seller_id).join(', '))
       // Optionally remove them from the list:
-      users.value = users.value.filter(u => !u.selected)
+      sellers.value = sellers.value.filter(s => !s.selected)
     }
   }
 
-  async function toggleUserActive(user) {
-    const newStatus = user.status === 'Active' ? 'Inactive' : 'Active'
+  async function toggleSellerActive(seller) {
+    const newStatus = seller.status === 'Active' ? 'Inactive' : 'Active'
     try {
-      // Call your API to update the user's status
-      await $fetch(`${api}/users/${user.user_id}/status/`, {
+      // Call your API to update the seller's status
+      await $fetch(`${api}/sellers/${seller.seller_id}/status/`, {
         method: 'PATCH',
         body: { is_active: newStatus === 'Active' }
       })
       // Update local status
-      user.status = newStatus
+      seller.status = newStatus
     } catch (err) {
       alert('Failed to update status')
     }
   }
 
-  const showUserAddModal = ref(false)
-  const userAddLoading = ref(false)
-  const userAddForm = ref({
-      user_name: '',
+  const showSellerAddModal = ref(false)
+  const sellerAddLoading = ref(false)
+  const sellerAddForm = ref({
+      seller_name: '',
       first_name: '',
       last_name: '',
-      user_email: '',
-      user_password: '',
-      user_phone: '',
-      user_address: '',
+      seller_email: '',
+      seller_password: '',
+      seller_phone: '',
+      seller_address: '',
       avatar: null, // File object
   })
-  const userAddAvatarPreview = ref(null)
+  const sellerAddAvatarPreview = ref(null)
 
-  function openUserAddModal() {
-      showUserAddModal.value = true
-      Object.assign(userAddForm.value, {
-      user_name: '',
+  function openSellerAddModal() {
+      showSellerAddModal.value = true
+      Object.assign(sellerAddForm.value, {
+      seller_name: '',
       first_name: '',
       last_name: '',
-      user_email: '',
-      user_password: '',
-      user_phone: '',
-      user_address: '',
+      seller_email: '',
+      seller_password: '',
+      seller_phone: '',
+      seller_address: '',
       avatar: null,
       })
-      userAddAvatarPreview.value = null
+      sellerAddAvatarPreview.value = null
   }
 
-  function closeUserAddModal() {
-      showUserAddModal.value = false
+  function closeSellerAddModal() {
+      showSellerAddModal.value = false
   }
 
-  async function submitUserAdd() {
-      userAddLoading.value = true
+  async function submitSellerAdd() {
+      sellerAddLoading.value = true
       try {
       const formData = new FormData()
-      for (const key in userAddForm.value) {
-          if (userAddForm.value[key]) {
-          formData.append(key, userAddForm.value[key])
+      for (const key in sellerAddForm.value) {
+          if (sellerAddForm.value[key]) {
+          formData.append(key, sellerAddForm.value[key])
           }
       }
-      // API endpoint for adding user, adjust as needed
-      await $fetch(`${api}/users/`, {
+      // API endpoint for adding seller, adjust as needed
+      await $fetch(`${api}/sellers/`, {
           method: 'POST',
           body: formData,
       })
-      closeUserAddModal()
-      refresh() // Refresh user list
+      closeSellerAddModal()
+      refresh() // Refresh seller list
       } catch (err) {
-      alert('Failed to add user')
+      alert('Failed to add seller')
       } finally {
-      userAddLoading.value = false
+      sellerAddLoading.value = false
       }
   }
 
   function handleAvatarChange(e) {
     const file = e.target.files[0]
-    userAddForm.value.avatar = file
+    sellerAddForm.value.avatar = file
     if (file) {
     const reader = new FileReader()
     reader.onload = (ev) => {
-        userAddAvatarPreview.value = ev.target.result
+        sellerAddAvatarPreview.value = ev.target.result
     }
     reader.readAsDataURL(file)
     } else {
-    userAddAvatarPreview.value = null
+    sellerAddAvatarPreview.value = null
     }
   }
 
-  import UserAddModal from '~/components/UserAddModal.vue'
+  import SellerAddModal from '~/components/SellerAddModal.vue'
 
-  function handleUserAddSuccess() { refresh() }
+  function handleSellerAddSuccess() { refresh() }
+
+  const showTooltip = ref(false);
+    
+  const currentPage = ref(1);
+  const pageSize = 20; // or whatever your page size is
+
+  const paginatedSellers = computed(() => {
+    const start = (currentPage.value - 1) * pageSize;
+    return sellers.value.slice(start, start + pageSize);
+  });
+  const total = computed(() => sellers.value.length);
+  const totalPages = computed(() => Math.ceil(total.value / pageSize));
+
+  function goToPage(page) {
+  if (page < 1 || page > totalPages.value) return;
+  currentPage.value = page;
+  }
 
 </script>
 
@@ -206,7 +223,7 @@
               d="m1 9 4-4-4-4" />
           </svg>
           <a href="#"
-            class="ms-1 text-sm font-medium text-gray-800 hover:text-green-800 md:ms-2 dark:text-gray-400 dark:hover:text-white">Users</a>
+            class="ms-1 text-sm font-medium text-gray-800 hover:text-green-800 md:ms-2 dark:text-gray-400 dark:hover:text-white">Sellers</a>
         </div>
       </li>
     </ol>
@@ -214,26 +231,26 @@
   <!-- Header -->
   <div class="flex justify-between items-center mt-3 mb-3">
     <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-      All Users
+      All Sellers
     </h1>
     <button
       class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition"
-      @click="openUserAddModal"
+      @click="openSellerAddModal"
     >
-      <span class="mr-2">+</span> Add new user
+      <span class="mr-2">+</span> Add new seller
     </button>
   </div>
   <!-- Add Product Modal -->
-  <UserAddModal
-    :show="showUserAddModal"
-    @close="closeUserAddModal"
-    @success="handleUserAddSuccess"
+  <SellerAddModal
+    :show="showSellerAddModal"
+    @close="closeSellerAddModal"
+    @success="handleSellerAddSuccess"
   />
   <!-- Filters -->
   <div class="flex items-center justify-between mb-3">
     <!-- Filters (left side) -->
     <div class="flex flex-wrap gap-2">
-      <input v-model="search" type="text" placeholder="Search for users"
+      <input v-model="search" type="text" placeholder="Search for sellers"
         class="px-4 py-2 h-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
       <select v-model="selectedRole"
         class="px-4 py-2 pr-8 h-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none">
@@ -260,13 +277,13 @@
     <!-- Delete Button (right side) -->
     <button
       class="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition disabled:opacity-50 mt-2"
-      :disabled="!users?.some(p => p.selected)" @click="showDeleteSelectedModal = true">
-      Delete {{users?.filter(p => p.selected).length}} item<span
-        v-if="users?.filter(p => p.selected).length > 1">s</span>
+      :disabled="!sellers?.some(p => p.selected)" @click="showDeleteSelectedModal = true">
+      Delete {{sellers?.filter(p => p.selected).length}} item<span
+        v-if="sellers?.filter(p => p.selected).length > 1">s</span>
     </button>
   </div>
 
-  <!-- User Table -->
+  <!-- Seller Table -->
   <div class="overflow-x-auto bg-white rounded-lg">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
@@ -285,24 +302,24 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr v-for="user in users" :key="user.user_id">
+        <tr v-for="seller in sellers" :key="seller.seller_id">
           <td class="px-4 py-3">
             <input
               class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
-              type="checkbox" v-model="user.selected" />
+              type="checkbox" v-model="seller.selected" />
           </td>
-          <td class="px-4 py-3 font-semibold">{{ user.user_id }}</td>
+          <td class="px-4 py-3 font-semibold">{{ seller.seller_id }}</td>
           <td class="px-4 py-3">
             <div class="flex items-center">
-              <img :src="user.avatar" class="w-8 h-8 rounded-full mr-3" />
-              <span class="font-semibold">{{ user.user_name }}</span>
+              <img :src="seller.avatar" class="w-8 h-8 rounded-full mr-3" />
+              <span class="font-semibold">{{ seller.seller_name }}</span>
             </div>
           </td>
-          <td class="px-4 py-3 font-semibold">{{ user.user_email }}</td>
+          <td class="px-4 py-3 font-semibold">{{ seller.seller_email }}</td>
           <td class="px-4 py-3">
-            <span v-if="user.role === 'Admin'"
+            <span v-if="seller.role === 'Admin'"
               class="px-4 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Admin</span>
-            <span v-else-if="user.role === 'Seller'"
+            <span v-else-if="seller.role === 'Seller'"
               class="px-4 py-1 text-xs font-medium bg-purple-100 text-green-800 rounded">Seller</span>
             <span v-else class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">User</span>
           </td>
@@ -312,14 +329,14 @@
                 <input
                   type="checkbox"
                   class="sr-only peer"
-                  :checked="user.status === 'Active'"
-                  @change.stop="toggleUserActive(user)"
+                  :checked="seller.status === 'Active'"
+                  @change.stop="toggleSellerActive(seller)"
                 />
                 <div
                   class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600 dark:peer-checked:bg-green-600">
                 </div>
-                <span class="ml-3 text-sm font-medium" :class="user.status === 'Active' ? 'text-green-600' : 'text-red-600'">
-                  {{ user.status }}
+                <span class="ml-3 text-sm font-medium" :class="seller.status === 'Active' ? 'text-green-600' : 'text-red-600'">
+                  {{ seller.status }}
                 </span>
               </label>
             </div>
@@ -355,4 +372,110 @@
       </tbody>
     </table>
   </div>
+  <!-- Divider -->
+  <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+  <!-- Pagination -->
+  <div class="flex items-center justify-between mb-4">
+  <!-- Pagination Controls (left, arrows and page numbers) -->
+  <div>
+      <ul class="inline-flex items-center -space-x-px">
+      <li>
+          <button
+          class="flex items-center justify-center h-10 w-10 ms-0 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+          >
+          <span class="sr-only">Previous</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          </button>
+      </li>
+      <li v-for="page in Math.min(totalPages, 5)" :key="page">
+          <button
+          class="flex items-center justify-center h-10 w-10 leading-tight border border-gray-300
+              hover:bg-gray-100 hover:text-green-700
+              focus:z-20 focus:ring-2 focus:ring-green-500
+              transition"
+          :class="{
+              'bg-green-50 text-green-600 border-green-400': currentPage === page,
+              'bg-white text-gray-500': currentPage !== page
+          }"
+          @click="goToPage(page)"
+          >
+          {{ page }}
+          </button>
+      </li>
+      <li>
+          <button
+          class="flex items-center justify-center h-10 w-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:border-gray-500 hover:text-neutral-950 disabled:opacity-50"
+          :disabled="currentPage === totalPages"
+          @click="goToPage(currentPage + 1)"
+          >
+          <span class="sr-only">Next</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+          </button>
+      </li>
+      <!-- Showing Info -->
+      <li class="text-sm text-gray-600 ml-4">
+          Showing <span class="font-semibold">{{ (currentPage - 1) * pageSize + 1 }}</span>
+          -
+          <span class="font-semibold">{{ Math.min(currentPage * pageSize, total) }}</span>
+          of <span class="font-semibold">{{ total }}</span>
+      </li>
+      </ul>
+  </div>
+  <!-- Green Buttons (right) -->
+  <div class="flex items-center space-x-6">
+      <div class="flex items-center space-x-2">
+      <button
+          class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+          :disabled="currentPage === 1"
+          @click="goToPage(currentPage - 1)"
+      >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Previous
+      </button>
+      <button
+          class="flex items-center px-6 py-2 bg-green-700 text-white rounded-xl font-semibold text-base shadow hover:bg-green-800 transition disabled:opacity-50"
+          :disabled="currentPage === totalPages"
+          @click="goToPage(currentPage + 1)"
+      >
+          Next
+          <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" stroke-width="4" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+      </button>
+      </div>
+  </div>
+  </div>
+  <!-- Footer -->
+  <footer
+      class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
+      <div class="flex items-center space-x-4">
+          <span>© 2025 FreshBytes. All rights reserved.</span>
+          <a href="#" class="hover:underline">Privacy Policy</a>
+          <a href="#" class="hover:underline">API</a>
+          <a href="#" class="hover:underline">Contact</a>
+      </div>
+
+      <div class="flex items-center space-x-2 mt-2 md:mt-0">
+          <select class="text-sm bg-transparent focus:outline-none dark:text-white">
+              <option selected>English (US)</option>
+              <!-- Add more language options -->
+          </select>
+          <button class="text-gray-500 dark:text-gray-300">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 4v16m8-8H4" />
+              </svg>
+          </button>
+      </div>
+  </footer>
 </template>
