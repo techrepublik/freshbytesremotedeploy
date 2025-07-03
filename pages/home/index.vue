@@ -8,7 +8,7 @@
     console.log(api);
     
 
-    const { data: products } = await useFetch(`${api}/products/`)
+    const { data: products } = await useFetch(`${api}api/products/`)
 </script>
 
 <template>

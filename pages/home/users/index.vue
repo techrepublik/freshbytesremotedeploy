@@ -24,9 +24,24 @@
 
   // Fetch users from your API with filters
   const { data, pending, error, refresh } = await useFetch(
-    () => `${api}/users/${queryString.value}`,
-    { server: false }
+    () => `${api}/api/users/${queryString.value}`,
+    { 
+      server: false,
+      headers: computed(() => {
+        const accessTokenCookie = useCookie('auth-access-token')
+        const token = accessTokenCookie.value || accessToken.value
+        
+        return token ? {
+          Authorization: `Bearer ${token}`
+        } : {}
+      })
+    }
   )
+
+  // Add debugging
+  console.log('API URL:', `${api}/api/users/${queryString.value}`)
+  console.log('Raw data:', data.value)
+  console.log('Error:', error.value)
 
   const loading = computed(() => pending.value);
 
@@ -83,7 +98,7 @@
     const newStatus = user.status === 'Active' ? 'Inactive' : 'Active'
     try {
       // Call your API to update the user's status
-      await $fetch(`${api}/users/${user.user_id}/status/`, {
+      await $fetch(`${api}/api/users/${user.user_id}/status/`, {
         method: 'PATCH',
         body: { is_active: newStatus === 'Active' }
       })
@@ -137,7 +152,7 @@
           }
       }
       // API endpoint for adding user, adjust as needed
-      await $fetch(`${api}/users/`, {
+      await $fetch(`${api}/api/users/`, {
           method: 'POST',
           body: formData,
       })
