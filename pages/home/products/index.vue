@@ -5,9 +5,9 @@
 
     const config = useRuntimeConfig();
     const api = config.public.API_LINK; // API HERE
-    const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
-    const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
-    const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
+    const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
+    const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
+    const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
 
     const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
@@ -42,7 +42,7 @@
     async function toggleProductActive(product) {
     product.is_active = !product.is_active;
     try {
-        await $fetch(`${api}/products/${product.product_id}/`, {
+        await $fetch(`${api}api/products/${product.product_id}/`, {
         method: 'PATCH',
         body: { is_active: product.is_active }
         });
@@ -55,8 +55,8 @@
     }
     }
 
-    const { data: users } = useFetch(`${api}/users/`, { server: false });
-    const { data: sellers } = useFetch(`${api}/sellers/`, { server: false });
+    const { data: users } = useFetch(`${api}api/users/`, { server: false });
+    const { data: sellers } = useFetch(`${api}api/sellers/`, { server: false });
 
 
     async function addProduct() {
@@ -98,7 +98,7 @@
     });
 
     try {
-        await $fetch(`${api}/products/`, {
+        await $fetch(`${api}api/products/`, {
         method: 'POST',
         body: formData,
         });
@@ -115,7 +115,7 @@
     async function deleteSingleProduct() {
     if (!productToDelete.value) return;
     try {
-        await $fetch(`${api}/products/${productToDelete.value.product_id}/`, {
+        await $fetch(`${api}api/products/${productToDelete.value.product_id}/`, {
         method: 'DELETE'
         });
         // Remove from local list
@@ -137,7 +137,7 @@
         // Delete each selected product in the backend
         await Promise.all(
           selected.map(product =>
-            $fetch(`${api}/products/${product.product_id}/`, { method: 'DELETE' })
+            $fetch(`${api}api/products/${product.product_id}/`, { method: 'DELETE' })
           )
         );
         // Remove from local list
@@ -391,7 +391,7 @@
     productImages.value.forEach(file => {
         formData.append('images', file);
     });
-    await $fetch(`${api}/products/`, {
+    await $fetch(`${api}api/products/`, {
         method: 'POST',
         body: formData,
     });

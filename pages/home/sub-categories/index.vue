@@ -9,8 +9,8 @@ const api = config.public.API_LINK
 
 
 
-const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
-const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
+const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
+const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
@@ -64,7 +64,7 @@ async function addSubCategory() {
     // }
 
     try {
-        await $fetch(`${api}/subcategories/`, {
+        await $fetch(`${api}api/subcategories/`, {
             method: 'POST',
             body: newSubCategory.value,
         });
@@ -86,7 +86,7 @@ async function deleteSubCategory() {
         return;
     }
     try {
-        await $fetch(`${api}/subcategories/${subcategoryToDelete.value.sub_category_id}/`, {
+        await $fetch(`${api}api/subcategories/${subcategoryToDelete.value.sub_category_id}/`, {
             method: 'DELETE',
         });
         alert('Category deleted successfully.');
@@ -104,7 +104,7 @@ async function updateSubCategory() {
         return;
     }
     try {
-        await $fetch(`${api}/subcategories/${subcategoryToUpdate.value.sub_category_id}/`, {
+        await $fetch(`${api}api/subcategories/${subcategoryToUpdate.value.sub_category_id}/`, {
             method: 'PATCH', // or 'PATCH' if your API supports partial updates
             body: subcategoryToUpdate.value,
         });
@@ -190,7 +190,7 @@ async function deleteSelectedCategories() {
     }
     try {
         for (const id of selectedSubCategoryIds.value) {
-            await $fetch(`${api}/subcategories/${id}/`, {
+            await $fetch(`${api}api/subcategories/${id}/`, {
                 method: 'DELETE',
             });
         }
