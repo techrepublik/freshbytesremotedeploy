@@ -19,12 +19,10 @@ const discountTypeFilter = ref('');
 const { data: promos, pending: pendingPromos } = useFetch(`${api}/promos/`, { server: false });
 const { data: sellers, pending: pendingSellers } = useFetch(`${api}/sellers/`, { server: false });
 const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
-// If sellers is a single object, convert to array
+
 const sellersArray = computed(() => {
     if (!sellers.value) return [];
-    // If already array, return as is
     if (Array.isArray(sellers.value)) return sellers.value;
-    // If object, wrap in array
     return [sellers.value];
 });
 const loading = computed(() => pendingPromos.value || pendingSellers.value || pendingProducts.value);
@@ -146,7 +144,7 @@ async function updatePromo() {
     }
     try {
         await $fetch(`${api}/promos/${promoToUpdate.value.promo_id}/`, {
-            method: 'PATCH', // or 'PATCH' if your API supports partial updates
+            method: 'PATCH', 
             body: promoToUpdate.value,
         });
         alert('Promo updated successfully.');
