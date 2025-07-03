@@ -8,9 +8,9 @@ definePageMeta({
 const config = useRuntimeConfig();
 const api = config.public.API_LINK;
 
-const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
-const { data: categories, pending: pendingCategories } = useFetch(`${api}/categories/`, { server: false });
-const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}/subcategories/`, { server: false });
+const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
+const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
+const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
@@ -66,7 +66,7 @@ async function addCategory() {
     // }
 
     try {
-        await $fetch(`${api}/categories/`, {
+        await $fetch(`${api}api/categories/`, {
             method: 'POST',
             body: newCategory.value,
         });
@@ -88,7 +88,7 @@ async function deleteCategory() {
         return;
     }
     try {
-        await $fetch(`${api}/categories/${categoryToDelete.value.category_id}/`, {
+        await $fetch(`${api}api/categories/${categoryToDelete.value.category_id}/`, {
             method: 'DELETE',
         });
         alert('Category deleted successfully.');
@@ -107,7 +107,7 @@ async function updateCategory() {
         return;
     }
     try {
-        await $fetch(`${api}/categories/${categoryToUpdate.value.category_id}/`, {
+        await $fetch(`${api}api/categories/${categoryToUpdate.value.category_id}/`, {
             method: 'PATCH', // or 'PATCH' if your API supports partial updates
             body: categoryToUpdate.value,
         });
@@ -204,7 +204,7 @@ async function deleteSelectedCategories() {
     try {
         // Delete each selected category (sequentially)
         for (const id of selectedCategoryIds.value) {
-            await $fetch(`${api}/categories/${id}/`, {
+            await $fetch(`${api}api/categories/${id}/`, {
                 method: 'DELETE',
             });
         }

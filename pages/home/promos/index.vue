@@ -16,10 +16,11 @@ const selectedPromoIds = ref([]);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const discountTypeFilter = ref('');
-const { data: promos, pending: pendingPromos } = useFetch(`${api}/promos/`, { server: false });
-const { data: sellers, pending: pendingSellers } = useFetch(`${api}/sellers/`, { server: false });
-const { data: products, pending: pendingProducts } = useFetch(`${api}/products/`, { server: false });
 
+const { data: promos, pending: pendingPromos } = useFetch(`${api}api/promos/`, { server: false });
+const { data: sellers, pending: pendingSellers } = useFetch(`${api}api/sellers/`, { server: false });
+const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
+// If sellers is a single object, convert to array
 const sellersArray = computed(() => {
     if (!sellers.value) return [];
     if (Array.isArray(sellers.value)) return sellers.value;
@@ -105,7 +106,7 @@ async function addPromo() {
     console.log('Submitting promo:', JSON.stringify(newPromo.value, null, 2));
 
     try {
-        await $fetch(`${api}/promos/`, {
+        await $fetch(`${api}api/promos/`, {
             method: 'POST',
             body: newPromo.value,
         });
@@ -125,7 +126,7 @@ async function deletePromo() {
         return;
     }
     try {
-        await $fetch(`${api}/promos/${promoToDelete.value.promo_id}/`, {
+        await $fetch(`${api}api/promos/${promoToDelete.value.promo_id}/`, {
             method: 'DELETE',
         });
         alert('Promo deleted successfully.');
@@ -143,8 +144,8 @@ async function updatePromo() {
         return;
     }
     try {
-        await $fetch(`${api}/promos/${promoToUpdate.value.promo_id}/`, {
-            method: 'PATCH', 
+        await $fetch(`${api}api/promos/${promoToUpdate.value.promo_id}/`, {
+            method: 'PATCH', // or 'PATCH' if your API supports partial updates
             body: promoToUpdate.value,
         });
         alert('Promo updated successfully.');
@@ -228,7 +229,7 @@ async function deleteSelectedPromos() {
     }
     try {
         for (const id of selectedPromoIds.value) {
-            await $fetch(`${api}/promos/${id}/`, {
+            await $fetch(`${api}api/promos/${id}/`, {
                 method: 'DELETE',
             });
         }

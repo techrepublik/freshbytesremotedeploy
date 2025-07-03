@@ -22,7 +22,7 @@
 
   // Fetch sellers from your API with filters
   const { data, pending, error, refresh } = await useFetch(
-    () => `${api}/sellers/${queryString.value}`,
+    () => `${api}api/sellers/${queryString.value}`,
     { server: false }
   )
 
@@ -81,7 +81,7 @@
     const newStatus = seller.status === 'Active' ? 'Inactive' : 'Active'
     try {
       // Call your API to update the seller's status
-      await $fetch(`${api}/sellers/${seller.seller_id}/status/`, {
+      await $fetch(`${api}api/sellers/${seller.seller_id}/status/`, {
         method: 'PATCH',
         body: { is_active: newStatus === 'Active' }
       })
@@ -135,7 +135,7 @@
           }
       }
       // API endpoint for adding seller, adjust as needed
-      await $fetch(`${api}/sellers/`, {
+      await $fetch(`${api}api/sellers/`, {
           method: 'POST',
           body: formData,
       })
