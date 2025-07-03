@@ -62,9 +62,9 @@
         }
     }
 
-    // Auto-fill demo credentials (remove in production)
-    onMounted(() => {
-        form.email = 'admin@example.com'
-        form.password = 'admin123'
-    })
+    // // Auto-fill demo credentials (remove in production)
+    // onMounted(() => {
+    //     form.email = 'admin@example.com'
+    //     form.password = 'admin123'
+    // })
 </script>
