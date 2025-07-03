@@ -16,15 +16,14 @@ const selectedPromoIds = ref([]);
 const searchQuery = ref('');
 const statusFilter = ref('');
 const discountTypeFilter = ref('');
+
 const { data: promos, pending: pendingPromos } = useFetch(`${api}api/promos/`, { server: false });
 const { data: sellers, pending: pendingSellers } = useFetch(`${api}api/sellers/`, { server: false });
 const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
 // If sellers is a single object, convert to array
 const sellersArray = computed(() => {
     if (!sellers.value) return [];
-    // If already array, return as is
     if (Array.isArray(sellers.value)) return sellers.value;
-    // If object, wrap in array
     return [sellers.value];
 });
 const loading = computed(() => pendingPromos.value || pendingSellers.value || pendingProducts.value);
