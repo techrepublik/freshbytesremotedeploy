@@ -5,9 +5,83 @@
 
     const config = useRuntimeConfig();
     const api = config.public.API_LINK; // API HERE
-    const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
-    const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
-    const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
+
+    const accessToken = ref('');
+    const queryString = ref('');
+
+    // Function to get auth headers
+    const getAuthHeaders = () => {
+        const accessTokenCookie = useCookie('auth-access-token');
+        const token = accessTokenCookie.value || accessToken.value;
+        
+        return token ? {
+            Authorization: `Bearer ${token}`
+        } : {};
+    };
+
+    // Products fetch with proper error handling and refresh capability
+    const { data: products, pending: pendingProducts, error, refresh: refreshProducts } = await useFetch(
+        () => `${api}/api/products/${queryString.value}`,
+        { 
+            server: false,
+            headers: computed(() => getAuthHeaders()),
+            onResponseError({ response }) {
+                console.error('Products API Error:', response.status, response._data);
+                if (response.status === 401) {
+                    // Handle unauthorized - redirect to login or refresh token
+                    navigateTo('/login');
+                }
+            }
+        }
+    );
+
+    // Categories fetch with auth headers
+    const { data: categories, pending: pendingCategories, refresh: refreshCategories } = await useFetch(
+        `${api}/api/categories/`, 
+        { 
+            server: false,
+            headers: computed(() => getAuthHeaders()),
+            onResponseError({ response }) {
+                console.error('Categories API Error:', response.status, response._data);
+            }
+        }
+    );
+
+    // Subcategories fetch with auth headers
+    const { data: subcategories, pending: pendingSubcategories, refresh: refreshSubcategories } = await useFetch(
+        `${api}/api/subcategories/`, 
+        { 
+            server: false,
+            headers: computed(() => getAuthHeaders()),
+            onResponseError({ response }) {
+                console.error('Subcategories API Error:', response.status, response._data);
+            }
+        }
+    );
+
+    // Users fetch with auth headers
+    const { data: users, refresh: refreshUsers } = await useFetch(
+        `${api}/api/users/`, 
+        { 
+            server: false,
+            headers: computed(() => getAuthHeaders()),
+            onResponseError({ response }) {
+                console.error('Users API Error:', response.status, response._data);
+            }
+        }
+    );
+
+    // Sellers fetch with auth headers
+    const { data: sellers, refresh: refreshSellers } = await useFetch(
+        `${api}/api/sellers/`, 
+        { 
+            server: false,
+            headers: computed(() => getAuthHeaders()),
+            onResponseError({ response }) {
+                console.error('Sellers API Error:', response.status, response._data);
+            }
+        }
+    );
 
     const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
@@ -40,24 +114,21 @@
     });
 
     async function toggleProductActive(product) {
-    product.is_active = !product.is_active;
-    try {
-        await $fetch(`${api}api/products/${product.product_id}/`, {
-        method: 'PATCH',
-        body: { is_active: product.is_active }
-        });
-        // Optionally, show a success message here
-    } catch (error) {
-        // If the API fails, revert the change
         product.is_active = !product.is_active;
-        alert('Failed to update product display status.');
-        console.error(error);
+        try {
+            await $fetch(`${api}/api/products/${product.product_id}/`, {
+                method: 'PATCH',
+                headers: getAuthHeaders(),
+                body: { is_active: product.is_active }
+            });
+            // Optionally, show a success message here
+        } catch (error) {
+            // If the API fails, revert the change
+            product.is_active = !product.is_active;
+            alert('Failed to update product display status.');
+            console.error(error);
+        }
     }
-    }
-
-    const { data: users } = useFetch(`${api}api/users/`, { server: false });
-    const { data: sellers } = useFetch(`${api}api/sellers/`, { server: false });
-
 
     async function addProduct() {
     // Validate required fields
@@ -98,12 +169,15 @@
     });
 
     try {
-        await $fetch(`${api}api/products/`, {
-        method: 'POST',
-        body: formData,
+        await $fetch(`${api}/api/products/`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData,
         });
-        await refreshNuxtData();
+        // Refresh all data after adding product
+        await refreshAllData();
         closeAddProductModal();
+        alert('Product added successfully!');
     } catch (error) {
         alert('Failed to add product.');
         console.error('API error:', error.data || error);
@@ -113,42 +187,59 @@
     console.log(newProduct.value);
 
     async function deleteSingleProduct() {
-    if (!productToDelete.value) return;
-    try {
-        await $fetch(`${api}api/products/${productToDelete.value.product_id}/`, {
-        method: 'DELETE'
-        });
-        // Remove from local list
-        if (products.value) {
-        products.value = products.value.filter(p => p.product_id !== productToDelete.value.product_id);
+        if (!productToDelete.value) return;
+        try {
+            await $fetch(`${api}/api/products/${productToDelete.value.product_id}/`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            // Refresh products data
+            await refreshProducts();
+            closeDeleteModal();
+            alert('Item deleted successfully!');
+        } catch (error) {
+            alert('Failed to delete product.');
+            console.error(error);
         }
-        closeDeleteModal();
-        alert('Item deleted successfully!');
-    } catch (error) {
-        alert('Failed to delete product.');
-        console.error(error);
-    }
     }
 
     async function deleteSelectedProducts() {
-    const selected = products.value.filter(p => p.selected);
-    if (!selected.length) return;
-    try {
-        // Delete each selected product in the backend
-        await Promise.all(
-          selected.map(product =>
-            $fetch(`${api}api/products/${product.product_id}/`, { method: 'DELETE' })
-          )
-        );
-        // Remove from local list
-        products.value = products.value.filter(p => !p.selected);
-        allSelected.value = false;
-        showDeleteSelectedModal.value = false;
-        alert('Selected items deleted successfully!');
-    } catch (error) {
-        alert('Failed to delete selected products.');
-        console.error(error);
+        const selected = products.value.filter(p => p.selected);
+        if (!selected.length) return;
+        try {
+            // Delete each selected product in the backend
+            await Promise.all(
+                selected.map(product =>
+                    $fetch(`${api}/api/products/${product.product_id}/`, { 
+                        method: 'DELETE',
+                        headers: getAuthHeaders()
+                    })
+                )
+            );
+            // Refresh products data
+            await refreshProducts();
+            allSelected.value = false;
+            showDeleteSelectedModal.value = false;
+            alert('Selected items deleted successfully!');
+        } catch (error) {
+            alert('Failed to delete selected products.');
+            console.error(error);
+        }
     }
+
+    // Centralized refresh function
+    async function refreshAllData() {
+        try {
+            await Promise.all([
+                refreshProducts(),
+                refreshCategories(),
+                refreshSubcategories(),
+                refreshUsers(),
+                refreshSellers()
+            ]);
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        }
     }
 
     function handleDelete() {
@@ -297,9 +388,9 @@
         showUpdateModal.value = true;
     }
     
-    async function refreshProducts() {
-    // If you use useFetch, you can use refreshNuxtData to re-fetch products
-    await refreshNuxtData();
+    // Update the existing refreshProducts function
+    async function refreshProductsData() {
+        await refreshProducts();
     }
 
     function closeUpdateModal() {
@@ -382,20 +473,36 @@
 
     const productImages = ref([]) // Array of File objects
     async function handleAddProduct() {
-    const formData = new FormData();
-    // Add product fields
-    for (const key in newProduct.value) {
-        formData.append(key, newProduct.value[key]);
+        const formData = new FormData();
+        // Add product fields
+        for (const key in newProduct.value) {
+            formData.append(key, newProduct.value[key]);
+        }
+        // Add images
+        productImages.value.forEach(file => {
+            formData.append('images', file);
+        });
+        
+        try {
+            await $fetch(`${api}/api/products/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: formData,
+            });
+            await refreshAllData();
+            alert('Product added successfully!');
+        } catch (error) {
+            alert('Failed to add product.');
+            console.error('API error:', error);
+        }
     }
-    // Add images
-    productImages.value.forEach(file => {
-        formData.append('images', file);
+
+    // Watch for token changes and refresh data
+    watch(() => useCookie('auth-access-token').value, async (newToken) => {
+        if (newToken) {
+            await refreshAllData();
+        }
     });
-    await $fetch(`${api}api/products/`, {
-        method: 'POST',
-        body: formData,
-    });
-    }
 
 </script>
 
