@@ -18,7 +18,18 @@ const props = defineProps({
 })
 
 // Define emits for parent communication
-const emit = defineEmits(['update-user', 'delete-user', 'toggle-status', 'toggle-all-selected', 'toggle-user-selected'])
+const emit = defineEmits([
+  'update-user', 
+  'delete-user', 
+  'toggle-status', 
+  'toggle-all-selected', 
+  'toggle-user-selected',
+  'view-user' // Add this new emit
+])
+
+const viewUserDetails = (user) => {
+  emit('view-user', user)
+}
 
 // Computed properties
 const paginatedUsers = computed(() => {
@@ -34,8 +45,7 @@ const allSelected = computed({
 })
 
 const getUserRole = (user) => {
-  if (user.is_superuser) return 'superuser'
-  if (user.is_admin) return 'admin'
+  if (user.is_superuser) return 'Administrator'
   if (user.role === 'seller') return 'seller'
   return 'customer'
 }
@@ -45,10 +55,8 @@ const getRoleBadgeClass = (user) => {
   const role = getUserRole(user)
   
   switch(role) {
-    case 'superuser':
+    case 'Administrator':
       return 'px-4 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded'
-    case 'admin':
-      return 'px-4 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded'
     case 'seller':
       return 'px-4 py-1 text-xs font-medium bg-green-100 text-green-800 rounded'
     case 'customer':
@@ -62,9 +70,7 @@ const getRoleDisplayName = (user) => {
   const role = getUserRole(user)
   
   switch(role) {
-    case 'superuser':
-      return 'Super User'
-    case 'admin':
+    case 'Administrator':
       return 'Administrator'
     case 'seller':
       return 'Seller'
@@ -114,8 +120,13 @@ const openDeleteModal = (user) => {
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <tr v-for="user in paginatedUsers" :key="user.user_id">
-          <td class="px-4 py-3">
+        <tr 
+          v-for="user in paginatedUsers" 
+          :key="user.user_id"
+          class="hover:bg-gray-50 cursor-pointer"
+          @click="viewUserDetails(user)"
+        >
+          <td class="px-4 py-3" @click.stop>
             <input
               class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300"
               type="checkbox" 
@@ -147,19 +158,19 @@ const openDeleteModal = (user) => {
                 <input
                   type="checkbox"
                   class="sr-only peer"
-                  :checked="user.status === 'Active'"
+                  :checked="user.is_active"
                   @change.stop="toggleUserActive(user)"
                 />
                 <div
                   class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all peer-checked:bg-green-600">
                 </div>
-                <span class="ml-3 text-sm font-medium" :class="user.status === 'Active' ? 'text-green-600' : 'text-red-600'">
-                  {{ user.status }}
+                <span class="ml-3 text-sm font-medium" :class="user.is_active ? 'text-green-600' : 'text-red-600'">
+                  {{ user.is_active ? 'Active' : 'Inactive' }}
                 </span>
               </label>
             </div>
           </td>
-          <td class="p-4 space-x-2 whitespace-nowrap">
+          <td class="p-4 space-x-2 whitespace-nowrap" @click.stop>
             <div class="flex justify-center items-center space-x-2">
               <button type="button" @click.stop="openUpdateModal(user)"
                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] hover:text-white rounded-lg bg-primary-700 hover:bg-green-600 focus:ring-4 focus:ring-primary-300">
@@ -173,7 +184,7 @@ const openDeleteModal = (user) => {
                 </svg>
                 Update
               </button>
-              <button type="button" @click.stop="openDeleteModal(user)"
+               <button type="button" @click="openDeleteModal(user)"
                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300">
                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd"

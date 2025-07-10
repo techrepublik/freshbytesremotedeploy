@@ -33,7 +33,6 @@ const form = ref({
   user_phone: '',
   user_address: '',
   role: 'customer', // Add role field
-  is_admin: false,
   is_superuser: false,
   is_active: true,
   avatar: null,
@@ -58,8 +57,7 @@ function resetForm() {
     password: '',
     user_phone: '',
     user_address: '',
-    role: '', // Add role field
-    is_admin: false,
+    role: 'customer', // Add role field
     is_superuser: false,
     is_active: true,
     avatar: null,
@@ -101,7 +99,16 @@ function removeAvatar() {
 async function submit() {
   loading.value = true
   try {
-    // Prepare the user data according to your API structure
+    // For administrators (superuser), send 'customer' as role and set is_superuser to true
+    let role = form.value.role
+    let is_superuser = form.value.is_superuser
+    
+    if (role === 'superuser') {
+      role = 'customer' // Use customer as the base role for admins
+      is_superuser = true
+    }
+    
+    // Prepare the user data
     const userData = {
       user_name: form.value.user_name,
       first_name: form.value.first_name,
@@ -110,11 +117,12 @@ async function submit() {
       password: form.value.password,
       user_phone: form.value.user_phone,
       user_address: form.value.user_address,
-      role: form.value.role,
-      is_admin: form.value.is_admin,
-      is_superuser: form.value.is_superuser,
+      role: role, // Use the adjusted role
+      is_superuser: is_superuser,
       is_active: form.value.is_active
     }
+    
+    console.log('Sending user data:', userData)
 
     // Create user first
     const userResponse = await $fetch(`${api}/api/users/`, {
@@ -183,6 +191,15 @@ watch(addressQuery, (query) => {
     }
   }, 400)
 })
+
+watch(() => form.value.role, (newRole) => {
+  // If role is superuser (Administrator), set is_superuser to true
+  if (newRole === 'superuser') {
+    form.value.is_superuser = true;
+  } else {
+    form.value.is_superuser = false;
+  }
+});
 
 function selectAddress(suggestion) {
   form.value.user_address = suggestion.display_name
@@ -331,7 +348,7 @@ function selectAddress(suggestion) {
             <select v-model="form.role" 
                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent">
               <option value="">Role</option>
-              <option value="admin">Administrator</option>
+              <option value="superuser">Administrator</option>
               <option value="customer">Customer</option>
               <option value="seller">Seller</option>
             </select>
@@ -342,28 +359,6 @@ function selectAddress(suggestion) {
 
           <!-- Permission Checkboxes -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex items-center">
-              <input type="checkbox" 
-                    id="add_is_admin"
-                    class="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
-                    v-model="form.is_admin">
-              <label for="add_is_admin" class="text-gray-700">
-                <span class="font-medium">Administrator</span>
-                <span class="block text-xs text-gray-500">Can moderate content</span>
-              </label>
-            </div>
-
-            <div class="flex items-center">
-              <input type="checkbox" 
-                    id="add_is_superuser"
-                    class="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
-                    v-model="form.is_superuser">
-              <label for="add_is_superuser" class="text-gray-700">
-                <span class="font-medium">Super User</span>
-                <span class="block text-xs text-gray-500">Full system access</span>
-              </label>
-            </div>
-
             <div class="flex items-center">
               <input type="checkbox" 
                     id="add_is_active"

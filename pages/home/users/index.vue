@@ -5,6 +5,7 @@
   import UserAddModal from '~/components/users/UserAddModal.vue';
   import UserUpdateModal from '~/components/users/UserUpdateModal.vue';
   import UserDeleteModal from '~/components/users/UserDeleteModal.vue';
+  import UserOpenModal from '~/components/users/UserOpenModal.vue';
   import { ref, watch, computed, onMounted } from 'vue'
 
   definePageMeta({
@@ -15,21 +16,22 @@
   const api = config.public.API_LINK;
 
   // Filter states
-  const searchQuery = ref('')
+  const searchTerm = ref('')
   const selectedRole = ref('')
   const selectedStatus = ref('')
   const accessToken = ref('')
 
   const showUserAddModal = ref(false)
   const showUserUpdateModal = ref(false)
-  const showUserDeleteModal = ref(false)
+  const showDeleteModal = ref(false)
   const userToUpdate = ref(null)
   const userToDelete = ref(null)
+  const usersToDelete = ref(null)
   
   // Compose query string for API
   const queryString = computed(() => {
     const params = new URLSearchParams()
-    if (searchQuery.value) params.append('search', searchQuery.value)
+    if (searchTerm.value) params.append('search', searchTerm.value)
     if (selectedRole.value) params.append('role', selectedRole.value)
     if (selectedStatus.value) params.append('status', selectedStatus.value)
     return params.toString() ? `?${params.toString()}` : ''
@@ -69,8 +71,7 @@
   const pageSize = 20
 
   const getUserRole = (user) => {
-    if (user.is_superuser) return 'superuser'
-    if (user.is_admin) return 'admin'
+    if (user.is_superuser) return 'Administrator'
     if (user.role === 'seller') return 'seller'
     return 'customer'
   }
@@ -79,32 +80,33 @@
   const filteredUsers = computed(() => {
     let filtered = [...allUsers.value]
 
-    // Apply search filter
-    if (searchQuery.value) {
-      const query = searchQuery.value.toLowerCase()
-      filtered = filtered.filter(user => 
-        user.user_name.toLowerCase().includes(query) ||
-        user.user_email.toLowerCase().includes(query) ||
-        (user.first_name && user.first_name.toLowerCase().includes(query)) ||
-        (user.last_name && user.last_name.toLowerCase().includes(query))
-      )
-    }
-
-    // Apply role filter
-    if (selectedRole.value) {
-      filtered = filtered.filter(user => {
-        const userRole = getUserRole(user)
-        return userRole === selectedRole.value.toLowerCase()
-      })
-    }
-
-    // Apply status filter
-    if (selectedStatus.value) {
-      filtered = filtered.filter(user => user.status === selectedStatus.value)
-    }
-
-    return filtered
-  })
+  // Apply search filter
+  if (searchTerm.value) {
+    const searchLower = searchTerm.value.toLowerCase();
+    filtered = filtered.filter(user => {
+      return user.user_name?.toLowerCase().includes(searchLower) || 
+             user.user_email?.toLowerCase().includes(searchLower) ||
+             user.first_name?.toLowerCase().includes(searchLower) || 
+             user.last_name?.toLowerCase().includes(searchLower);
+    });
+  }
+  
+  // Apply role filter
+  if (selectedRole.value) {
+    filtered = filtered.filter(user => {
+      const userRole = getUserRole(user);
+      return userRole.toLowerCase() === selectedRole.value.toLowerCase();
+    });
+  }
+  
+  // Apply status filter
+  if (selectedStatus.value) {
+    const isActive = selectedStatus.value === 'Active';
+    filtered = filtered.filter(user => user.is_active === isActive);
+  }
+  
+  return filtered;
+  });
 
   // Paginate the filtered results
   const paginatedUsers = computed(() => {
@@ -120,7 +122,7 @@
   }
 
   // Reset pagination when filters change
-  watch([searchQuery, selectedRole, selectedStatus], () => {
+  watch([searchTerm, selectedRole, selectedStatus], () => {
     currentPage.value = 1
   })
 
@@ -138,7 +140,6 @@
         user_email: u.user_email,
         role: u.role || '',
         status: u.is_active ? 'Active' : 'Inactive',
-        is_admin: u.is_admin || false,
         is_superuser: u.is_superuser || false,
         is_active: u.is_active || false,
         created_at: u.created_at,
@@ -153,15 +154,9 @@
         // Create diverse test data
         if (i % 20 === 0) {
           // Super User (is_superuser: true)
-          role = 'superuser';
-          is_admin = true;
+          role = 'Administrator';
           is_superuser = true;
         } else if (i % 10 === 0) {
-          // Admin (is_admin: true, is_superuser: false)
-          role = 'admin';
-          is_admin = true;
-          is_superuser = false;
-        } else if (i % 5 === 0) {
           // Seller
           role = 'seller';
           is_admin = false;
@@ -184,7 +179,6 @@
           user_email: `user${i + 1}@example.com`,
           role: role,
           status: i % 7 === 0 ? 'Inactive' : 'Active',
-          is_admin: is_admin,
           is_superuser: is_superuser,
           is_active: i % 7 !== 0,
           created_at: new Date().toISOString(),
@@ -197,7 +191,7 @@
 
   // Handle filter updates from UserFilter component
   const handleSearchUpdate = (value) => {
-    searchQuery.value = value
+    searchTerm.value = value
   }
 
   const handleRoleUpdate = (value) => {
@@ -232,30 +226,73 @@
     showUserUpdateModal.value = true
   }
 
-  function closeUserUpdateModal() {
-    showUserUpdateModal.value = false
-    userToUpdate.value = null
+  function openUserUpdateModal(user) {
+    userToUpdate.value = user;
+    showUserUpdateModal.value = true;
   }
 
   function openDeleteModal(user) {
-    userToDelete.value = user
-    showUserDeleteModal.value = true
+    userToDelete.value = user;
+    usersToDelete.value = [];
+    showDeleteModal.value = true
   }
 
-  function closeUserDeleteModal() {
-    showUserDeleteModal.value = false
-    userToDelete.value = null
+  function closeUserUpdateModal() {
+    showUserUpdateModal.value = false;  // Change from showUpdateModal to showUserUpdateModal
+    userToUpdate.value = null;
+  }
+
+  function resetUserSelections() {
+    // Uncheck all users
+    allUsers.value.forEach(user => {
+      user.selected = false;
+    });
   }
 
   function handleUserUpdateSuccess() {
-    manualRefresh() // Only refresh when user is actually updated
-    closeUserUpdateModal()
+    manualRefresh(); // You might have a function like this
+    closeUserUpdateModal();
   }
 
-  function handleUserDeleteSuccess(deletedUser) {
-    // Remove from local array
-    allUsers.value = allUsers.value.filter(u => u.user_id !== deletedUser.user_id)
-    closeUserDeleteModal()
+  // Function to open modal for bulk deletion
+  function openBulkDeleteModal() {
+    userToDelete.value = null;
+    usersToDelete.value = allUsers.value.filter(u => u.selected);
+    showDeleteModal.value = true;
+  }
+
+  // Function to close the delete modal
+  function closeDeleteModal() {
+    showDeleteModal.value = false;
+    userToDelete.value = null;
+    usersToDelete.value = [];
+  }
+
+  function handleUserDeleteSuccess(deletedUsers) {
+    if (Array.isArray(deletedUsers)) {
+      // Bulk delete
+      const deletedIds = deletedUsers.map(u => u.user_id);
+      allUsers.value = allUsers.value.filter(u => !deletedIds.includes(u.user_id));
+    } else {
+      // Single user delete
+      allUsers.value = allUsers.value.filter(u => u.user_id !== deletedUsers.user_id);
+    }
+  }
+
+  // Add these refs to your existing code
+  const showUserDetailsModal = ref(false);
+  const selectedUserDetails = ref(null);
+
+  // Add this function to open the user details modal
+  function openUserDetailsModal(user) {
+    selectedUserDetails.value = user;
+    showUserDetailsModal.value = true;
+  }
+
+  // Add this function to close the user details modal
+  function closeUserDetailsModal() {
+    showUserDetailsModal.value = false;
+    selectedUserDetails.value = null;
   }
   
   async function deleteUser(user) {
@@ -298,22 +335,30 @@
     }
   }
 
-  async function toggleUserActive(user) {
-    const newStatus = user.status === 'Active' ? 'Inactive' : 'Active'
+  async function toggleUserStatus(user) {
     try {
+      // Toggle the status locally first for immediate UI feedback
+      user.is_active = !user.is_active;
+      
+      // Call the API to update the status
       await $fetch(`${api}/api/users/${user.user_id}/`, {
         method: 'PATCH',
         headers: {
           ...getAuthHeaders(),
           'Content-Type': 'application/json'
         },
-        body: { is_active: newStatus === 'Active' }
-      })
-      user.status = newStatus
-      user.is_active = newStatus === 'Active'
-    } catch (err) {
-      alert('Failed to update status')
-      console.error(err)
+        body: {
+          is_active: user.is_active
+        }
+      });
+      
+      // Notify user
+      console.log(`User ${user.user_name} status updated successfully`);
+    } catch (error) {
+      // If API call fails, revert the local change
+      user.is_active = !user.is_active;
+      console.error('Failed to update user status:', error);
+      alert('Failed to update user status. Please try again.');
     }
   }
 
@@ -374,41 +419,51 @@
     @success="handleUserAddSuccess"
   />
 
+  <!-- User Details Modal -->
+  <UserOpenModal
+    :show="showUserDetailsModal"
+    :user="selectedUserDetails"
+    @close="closeUserDetailsModal"
+  />
+
   <!-- Update User Modal -->
   <UserUpdateModal
     :show="showUserUpdateModal"
-    :user-to-update="userToUpdate"
+    :userToUpdate="userToUpdate"
     @close="closeUserUpdateModal"
     @updated="handleUserUpdateSuccess"
   />
 
   <!-- Delete User Modal -->
-  <UserDeleteModal
-    :show="showUserDeleteModal"
-    :user-to-delete="userToDelete"
-    @close="closeUserDeleteModal"
+  <UserDeleteModal 
+    :show="showDeleteModal" 
+    :userToDelete="userToDelete" 
+    :usersToDelete="usersToDelete"
+    @close="closeDeleteModal" 
     @confirm="handleUserDeleteSuccess"
+    @reset-selections="resetUserSelections" 
   />
   
   <!-- UserFilter component -->
   <UserFilter 
-    :users="filteredUsers"
-    @update:search="handleSearchUpdate"
-    @update:role="handleRoleUpdate" 
-    @update:status="handleStatusUpdate"
-    @delete-selected="handleDeleteSelected"
+    :users="allUsers" 
+    v-model:search="searchTerm" 
+    v-model:role="selectedRole"
+    v-model:status="selectedStatus"
+    @delete-selected="openBulkDeleteModal" 
   />
 
   <!-- UserTable component -->
   <UserTable 
-    :users="paginatedUsers"
+    :users="filteredUsers"
     :current-page="currentPage"
     :page-size="pageSize"
-    @toggle-all-selected="handleToggleAllSelected"
-    @toggle-user-selected="handleToggleUserSelected"
-    @update-user="handleUpdateUser"
-    @delete-user="handleDeleteUser"
-    @toggle-status="handleToggleUserStatus"
+    @update-user="openUserUpdateModal"
+    @delete-user="openDeleteModal"
+    @toggle-status="toggleUserStatus"
+    @toggle-all-selected="toggleAllSelected"
+    @toggle-user-selected="toggleUserSelected"
+    @view-user="openUserDetailsModal"
   />
 
   <!-- Pagination component -->

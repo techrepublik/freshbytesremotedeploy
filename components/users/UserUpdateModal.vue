@@ -34,7 +34,6 @@ const editedUser = ref({
   user_address: '',
   avatar: '',
   role: '',
-  is_admin: false,
   is_superuser: false,
   is_active: true
 });
@@ -46,6 +45,13 @@ const avatarPreview = ref('');
 // Watch for prop changes
 watch(() => props.userToUpdate, (newVal) => {
   if (newVal) {
+    // Determine role based on permissions
+    let userRole = '';
+    if (newVal.is_superuser) {
+      userRole = 'Administrator';
+    } else {
+      userRole = newVal.role || '';
+    }
     editedUser.value = {
       user_id: newVal.user_id,
       user_name: newVal.user_name || '',
@@ -57,8 +63,7 @@ watch(() => props.userToUpdate, (newVal) => {
       user_phone: newVal.user_phone || newVal.phone_number || '',
       user_address: newVal.user_address || newVal.home_address || '',
       avatar: newVal.avatar || '',
-      role: newVal.role || role,
-      is_admin: newVal.is_admin || false,
+      role: userRole,
       is_superuser: newVal.is_superuser || false,
       is_active: newVal.is_active || newVal.status === 'Active'
     };
@@ -67,6 +72,15 @@ watch(() => props.userToUpdate, (newVal) => {
     clearAvatarUpload();
   }
 }, { immediate: true });
+
+watch(() => editedUser.value.role, (newRole) => {
+  // If role is Administrator, set is_superuser to true
+  if (newRole === 'Administrator') {
+    editedUser.value.is_superuser = true;
+  } else {
+    editedUser.value.is_superuser = false;
+  }
+});
 
 // Computed properties
 const isPasswordMatch = computed(() => {
@@ -129,11 +143,17 @@ async function updateUser() {
       user_email: editedUser.value.user_email,
       user_phone: editedUser.value.user_phone,
       user_address: editedUser.value.user_address,
-      role: editedUser.value.role,
-      is_admin: editedUser.value.is_admin,
       is_superuser: editedUser.value.is_superuser,
       is_active: editedUser.value.is_active
     };
+
+    if (editedUser.value.role === 'Administrator') {
+      // For administrators, use a default role (like customer) and rely on is_superuser flag
+      updateData.role = 'customer';
+    } else {
+      // For non-administrators, use the selected role
+      updateData.role = editedUser.value.role;
+    }
 
     // Only include password if it's being changed
     if (editedUser.value.password) {
@@ -373,7 +393,7 @@ function removeAvatar() {
             <select v-model="editedUser.role" 
                     class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent">
               <option value="">Role</option>
-              <option value="admin">Administrator</option>
+              <option value="Administrator">Administrator</option>
               <option value="customer">Customer</option>
               <option value="seller">Seller</option>
             </select>
@@ -384,28 +404,6 @@ function removeAvatar() {
 
           <!-- Permission Checkboxes -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="flex items-center">
-              <input type="checkbox" 
-                     id="is_admin"
-                     class="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
-                     v-model="editedUser.is_admin">
-              <label for="is_admin" class="text-gray-700">
-                <span class="font-medium">Administrator</span>
-                <span class="block text-xs text-gray-500">Can moderate content</span>
-              </label>
-            </div>
-
-            <div class="flex items-center">
-              <input type="checkbox" 
-                     id="is_superuser"
-                     class="mr-2 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" 
-                     v-model="editedUser.is_superuser">
-              <label for="is_superuser" class="text-gray-700">
-                <span class="font-medium">Super User</span>
-                <span class="block text-xs text-gray-500">Full system access</span>
-              </label>
-            </div>
-
             <div class="flex items-center">
               <input type="checkbox" 
                      id="is_active"
@@ -422,8 +420,7 @@ function removeAvatar() {
           <div class="mt-4 p-3 bg-blue-50 rounded-lg">
             <h4 class="text-sm font-medium text-green-900 mb-2">Role Hierarchy:</h4>
             <ul class="text-xs text-green-800 space-y-1">
-              <li><span class="font-medium">Super User:</span> Full system access (is_superuser = true)</li>
-              <li><span class="font-medium">Admin:</span> Content moderation access (is_admin = true)</li>
+              <li><span class="font-medium">Admin:</span> Full system access (is_superuser = true)</li>
               <li><span class="font-medium">Seller:</span> Can sell products (role = "seller")</li>
               <li><span class="font-medium">Customer:</span> Regular user (role = "customer")</li>
             </ul>

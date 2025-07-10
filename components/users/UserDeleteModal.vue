@@ -6,18 +6,22 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  userToDelete: {
-    type: Object,
-    default: () => null
-  }
+  userToDelete: { type: Object, default: null },
+  usersToDelete: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['close', 'confirm'])
+const emit = defineEmits(['close', 'confirm', 'reset-selections'])
 
 const loading = ref(false)
 
 const config = useRuntimeConfig();
 const api = config.public.API_LINK;
+
+// Computed to determine if we're in bulk delete mode
+const isBulkDelete = computed(() => props.usersToDelete && props.usersToDelete.length > 0);
+
+// Computed to get the count of users to delete
+const deleteCount = computed(() => isBulkDelete.value ? props.usersToDelete.length : 1);
 
 // Function to get auth headers
 const getAuthHeaders = () => {
@@ -29,43 +33,58 @@ const getAuthHeaders = () => {
   } : {}
 }
 
-function closeModal() {
+function closeModal(resetSelections = true) {
   emit('close')
+  
+  // When canceling, also emit event to reset selections
+  if (resetSelections && isBulkDelete.value) {
+    emit('reset-selections')
+  }
 }
 
 async function confirmDelete() {
-  if (!props.userToDelete) return
+  if ((!props.userToDelete && !isBulkDelete.value) || loading.value) return;
   
   loading.value = true
   try {
-    // Call API to delete user
-    await $fetch(`${api}/api/users/${props.userToDelete.user_id}/`, {
-      method: 'DELETE',
-      headers: getAuthHeaders()
-    })
+    if (isBulkDelete.value) {
+      // Bulk delete
+      await Promise.all(props.usersToDelete.map(user => 
+        $fetch(`${api}/api/users/${user.user_id}/`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        })
+      ));
+      emit('confirm', props.usersToDelete);
+    } else {
+      // Single user delete
+      await $fetch(`${api}/api/users/${props.userToDelete.user_id}/`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      emit('confirm', props.userToDelete);
+    }
     
-    emit('confirm', props.userToDelete)
-    closeModal()
-    alert('User deleted successfully!')
+    closeModal(false);
+    alert(`${isBulkDelete.value ? 'Users' : 'User'} deleted successfully!`);
   } catch (error) {
-    console.error('Failed to delete user:', error)
-    alert('Failed to delete user. Please try again.')
+    console.error('Failed to delete user(s):', error);
+    alert('Failed to delete user(s). Please try again.');
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 // Helper function to determine user role for display
 const getUserRole = (user) => {
   if (user.is_superuser) return 'Administrator'
-  if (user.is_admin) return 'Moderator'
   if (user.role === 'seller') return 'Seller'
   return 'Customer'
 }
 </script>
 
 <template>
-  <div v-if="show && userToDelete" 
+  <div v-if="show && (userToDelete || (usersToDelete && usersToDelete.length > 0))"
        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30"
        @click.self="closeModal">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative"
@@ -85,10 +104,12 @@ const getUserRole = (user) => {
           </svg>
         </div>
 
-        <h3 class="text-lg font-medium text-gray-900 mb-2">Delete User</h3>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">
+          {{ isBulkDelete ? `Delete ${deleteCount} Users` : 'Delete User' }}
+        </h3>
         
-        <!-- User Info -->
-        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+        <!-- Single User Info -->
+        <div v-if="!isBulkDelete && userToDelete" class="mb-4 p-3 bg-gray-50 rounded-lg">
           <div class="flex items-center justify-center mb-2">
             <img :src="userToDelete.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userToDelete.user_name)}`" 
                  class="w-10 h-10 rounded-full mr-3" 
@@ -100,29 +121,48 @@ const getUserRole = (user) => {
           </div>
           <div class="text-xs text-gray-500">
             Role: {{ getUserRole(userToDelete) }} | 
-            Status: {{ userToDelete.status }}
+            Status: {{ userToDelete.is_active ? 'Active' : 'Inactive' }}
+          </div>
+        </div>
+        
+        <!-- Bulk Users Info -->
+        <div v-else-if="isBulkDelete" class="mb-4 p-3 bg-gray-50 rounded-lg text-left">
+          <p class="font-medium mb-2">Selected users:</p>
+          <div class="max-h-40 overflow-y-auto">
+            <div v-for="user in usersToDelete" :key="user.user_id" 
+                 class="flex items-center py-2 border-b border-gray-100 last:border-0">
+              <img :src="user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_name)}&size=30`" 
+                   class="w-6 h-6 rounded-full mr-2" 
+                   :alt="user.user_name">
+              <div class="text-sm">
+                <span class="font-medium">{{ user.user_name }}</span>
+                <span class="text-xs text-gray-500 ml-2">({{ getUserRole(user) }})</span>
+              </div>
+            </div>
           </div>
         </div>
 
         <p class="text-sm text-gray-500 mb-6">
-          Are you sure you want to delete this user? This action cannot be undone.
+          Are you sure you want to delete 
+          {{ isBulkDelete ? 'these users' : 'this user' }}? 
+          This action cannot be undone.
           All user data, including orders and history, will be permanently removed.
         </p>
 
         <!-- Action Buttons -->
         <div class="flex justify-center space-x-4">
           <button type="button" 
-                  @click="closeModal"
-                  class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition"
-                  :disabled="loading">
-            Cancel
+            @click="closeModal(true)"
+            class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition"
+            :disabled="loading">
+              Cancel
           </button>
           <button type="button" 
                   @click="confirmDelete"
                   :disabled="loading"
                   class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
             <span v-if="loading">Deleting...</span>
-            <span v-else>Delete User</span>
+            <span v-else>{{ isBulkDelete ? `Delete ${deleteCount} Users` : 'Delete User' }}</span>
           </button>
         </div>
       </div>
