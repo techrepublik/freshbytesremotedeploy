@@ -75,10 +75,9 @@
         class="px-4 py-2 pr-8 h-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none"
       >
         <option value="">Roles</option>
-        <option value="superuser">Super User</option>
-        <option value="admin">Admin</option>
+        <option value="Administrator">Administrator</option>
         <option value="seller">Seller</option>
-        <option value="Customer">Customer</option>
+        <option value="customer">Customer</option>
       </select>
       
       <select 
