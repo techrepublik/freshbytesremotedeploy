@@ -7,25 +7,62 @@ definePageMeta({
 const config = useRuntimeConfig()
 const api = config.public.API_LINK
 
+const accessToken = ref('');
+const getAuthHeaders = () => {
+    const accessTokenCookie = useCookie('auth-access-token');
+    const token = accessTokenCookie.value || accessToken.value;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+onMounted(async () => {
+    try {
+        const response = await $fetch(`${api}/api/categories/`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+        categories.value = response.data || response
+    } catch (error) {
+        console.error('Failed to fetch categories:', error)
+    }
+})
 
+const { data: categories, pending: pendingCategories, refresh: refreshCategories } = await useFetch(
+  `${api}/api/categories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Categories API Error:', response.status, response._data);
+    }
+  }
+);
 
-const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
-const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
+const { data: subcategories, pending: pendingSubcategories, refresh: refreshSubcategories } = await useFetch(
+  `${api}/api/subcategories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Subcategories API Error:', response.status, response._data);
+    }
+  }
+);
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
 const newSubCategory = ref({
     sub_category_name: "",
     sub_category_description: "",
-    category_image: null,
+    sub_category_image: null,
     created_at: null,
     updated_at: null,
     category_id: ""
 });
 
+
 // Reactive variables
 const selectedSubCategory = ref('')
 const searchQuery = ref('');
+
 const filteredSubcategories = computed(() => {
     let list = subcategories.value || [];
     if (searchQuery.value) {
@@ -39,12 +76,9 @@ const filteredSubcategories = computed(() => {
     }
     return list;
 });
+
 const selectedCategory = ref('');
 // Sub-category map
-const subCategories = {
-    Fruits: ['Citrus', 'Berries', 'Tropical', 'Stone Fruits', 'Melons'],
-}
-
 const isSubCategoryVisible = ref(false);
 const isUpdateVisible = ref(false);
 const subcategoryToUpdate = ref(null);
@@ -54,42 +88,43 @@ const subcategoryToDelete = ref(null);
 const selectedSubCategoryIds = ref([]);
 
 async function addSubCategory() {
-    console.log(newSubCategory.value)
-    // if (
-    //     !newCategory.value.category_name ||
-    //     !newCategory.value.category_description
-    // ) {
-    //     alert('Please fill all required fields.');
-    //     return;
-    // }
-
     try {
-        await $fetch(`${api}api/subcategories/`, {
+        const formData = new FormData();
+        formData.append('sub_category_name', newSubCategory.value.sub_category_name);
+        formData.append('sub_category_description', newSubCategory.value.sub_category_description);
+        formData.append('category_id', parseInt(newSubCategory.value.category_id));
+        if (newSubCategory.value.sub_category_image) {
+            formData.append('sub_category_image', newSubCategory.value.sub_category_image);
+        }
+
+        await $fetch(`${api}/api/subcategories/`, {
             method: 'POST',
-            body: newSubCategory.value,
+            body: formData,
+            headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
         });
-        alert("Data added successfully")
+        alert("Data added successfully");
         closeAddSubCategoryModal();
         resetNewSubCategory();
         Object.keys(newSubCategory.value).forEach(key => newSubCategory.value[key] = null);
-        await refreshNuxtData();
+        await refreshSubcategories();
+
     } catch (error) {
-        alert('Failed to add category.');
+        alert('Failed to add sub-category.');
         console.error('API error:', error.data || error);
     }
 }
 
 async function deleteSubCategory() {
-    console.log('Deleting:', subcategoryToDelete.value);
-    if (!subcategoryToDelete.value || !subcategoryToDelete.value.sub_category_id) {
+    if (!subcategoryToDelete.value || !subcategoryToDelete.value.category_id) {
         alert('No category selected for deletion.');
         return;
     }
     try {
-        await $fetch(`${api}api/subcategories/${subcategoryToDelete.value.sub_category_id}/`, {
+        await $fetch(`${api}/api/subcategories/${subcategoryToDelete.value.sub_category_id}/`, {
             method: 'DELETE',
+            headers: getAuthHeaders(), // Add Authorization header
         });
-        alert('Category deleted successfully.');
+        alert('Sub-Category deleted successfully.');
         isDeleteVisible.value = false;
         subcategoryToDelete.value = null;
         await refreshNuxtData();
@@ -100,15 +135,24 @@ async function deleteSubCategory() {
 }
 async function updateSubCategory() {
     if (!subcategoryToUpdate.value || !subcategoryToUpdate.value.sub_category_id) {
-        alert('No category selected for update.');
+        alert('No subcategory selected for update.');
         return;
     }
     try {
-        await $fetch(`${api}api/subcategories/${subcategoryToUpdate.value.sub_category_id}/`, {
-            method: 'PATCH', // or 'PATCH' if your API supports partial updates
-            body: subcategoryToUpdate.value,
+        const formData = new FormData();
+        formData.append('sub_category_name', subcategoryToUpdate.value.sub_category_name);
+        formData.append('sub_category_description', subcategoryToUpdate.value.sub_category_description);
+        formData.append('category_id', parseInt(subcategoryToUpdate.value.category_id));
+        if (subcategoryToUpdate.value.sub_category_image) {
+            formData.append('sub_category_image', subcategoryToUpdate.value.sub_category_image);
+        }
+
+        await $fetch(`${api}/api/subcategories/${subcategoryToUpdate.value.sub_category_id}/`, {
+            method: 'PATCH',
+            body: formData,
+            headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
         });
-        alert('Category updated successfully.');
+        alert('Sub-Category updated successfully.');
         isUpdateVisible.value = false;
         subcategoryToUpdate.value = null;
         await refreshNuxtData();
@@ -121,11 +165,13 @@ function resetNewSubCategory() {
     newSubCategory.value = {
         sub_category_name: "",
         sub_category_description: "",
+        category_id: "",
         category_image: null,
         created_at: null,
         updated_at: null
     };
 }
+
 
 function closeAddSubCategoryModal() {
     resetNewSubCategory();
@@ -190,11 +236,12 @@ async function deleteSelectedCategories() {
     }
     try {
         for (const id of selectedSubCategoryIds.value) {
-            await $fetch(`${api}api/subcategories/${id}/`, {
+            await $fetch(`${api}/api/subcategories/${id}/`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(), // Add Authorization header
             });
         }
-        alert('Selected subcategories deleted successfully.');
+        alert('Selected categories deleted successfully.');
         selectedSubCategoryIds.value = [];
         await refreshNuxtData();
     } catch (error) {
@@ -202,6 +249,7 @@ async function deleteSelectedCategories() {
         console.error('API error:', error.data || error);
     }
 }
+
 </script>
 
 <template>
@@ -286,7 +334,7 @@ async function deleteSelectedCategories() {
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300">Category</label>
                             <select v-model="newSubCategory.category_id"
-                               class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">
+                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">
                                 <option disabled value="">Select Category</option>
                                 <option v-for="cat in categories" :key="cat.category_id" :value="cat.category_id">
                                     {{ cat.category_name }}
@@ -363,7 +411,7 @@ async function deleteSelectedCategories() {
                                     <th scope="col" class="p-4">
                                         <div class="flex items-center">
                                             <input id="checkbox-all" type="checkbox"
-                                                :checked="selectedSubCategoryIds.length === subcategories.length && subcategories.length > 0"
+                                                :checked="selectedSubCategoryIds.length === (subcategories?.length || 0) && (subcategories?.length || 0) > 0"
                                                 @change="toggleSelectAll"
                                                 class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
                                             <label for="checkbox-all" class="sr-only">checkbox</label>
@@ -518,7 +566,6 @@ async function deleteSelectedCategories() {
                                                                 Cancel
                                                             </button>
                                                         </div>
-
                                                     </form>
                                                 </div>
                                             </div>

@@ -8,9 +8,57 @@ definePageMeta({
 const config = useRuntimeConfig();
 const api = config.public.API_LINK;
 
-const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
-const { data: categories, pending: pendingCategories } = useFetch(`${api}api/categories/`, { server: false });
-const { data: subcategories, pending: pendingSubcategories } = useFetch(`${api}api/subcategories/`, { server: false });
+const accessToken = ref('');
+
+// Function to get auth headers
+
+const getAuthHeaders = () => {
+  const accessTokenCookie = useCookie('auth-access-token')
+  const token = accessTokenCookie.value
+  
+  return token ? {
+    Authorization: `Bearer ${token}`
+  } : {}
+}
+
+// Products fetch with auth headers
+const { data: products, pending: pendingProducts, refresh: refreshProducts } = await useFetch(
+  `${api}/api/products/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Products API Error:', response.status, response._data);
+      if (response.status === 401) {
+        navigateTo('/login');
+      }
+    }
+  }
+);
+
+// Categories fetch with auth headers
+const { data: categories, pending: pendingCategories, refresh: refreshCategories } = await useFetch(
+  `${api}/api/categories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Categories API Error:', response.status, response._data);
+    }
+  }
+);
+
+// Subcategories fetch with auth headers
+const { data: subcategories, pending: pendingSubcategories, refresh: refreshSubcategories } = await useFetch(
+  `${api}/api/subcategories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Subcategories API Error:', response.status, response._data);
+    }
+  }
+);
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
 
@@ -22,6 +70,7 @@ const newCategory = ref({
     created_at: null,
     updated_at: null
 });
+
 const searchQuery = ref('');
 const filteredCategories = computed(() => {
     let list = categories.value || [];
@@ -56,40 +105,38 @@ const selectedCategoryIds = ref([]);
 
 // Add Category
 async function addCategory() {
-    console.log(newCategory.value)
-    // if (
-    //     !newCategory.value.category_name ||
-    //     !newCategory.value.category_description
-    // ) {
-    //     alert('Please fill all required fields.');
-    //     return;
-    // }
-
-    try {
-        await $fetch(`${api}api/categories/`, {
-            method: 'POST',
-            body: newCategory.value,
-        });
-        alert("Data added successfully")
-        closeAddCategoryModal();
-        resetNewCategory();
-        Object.keys(newCategory.value).forEach(key => newCategory.value[key] = null);
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to add category.');
-        console.error('API error:', error.data || error);
+  try {
+    const formData = new FormData();
+    formData.append('category_name', newCategory.value.category_name);
+    formData.append('category_description', newCategory.value.category_description);
+    formData.append('category_isActive', String(newCategory.value.category_isActive));
+    if (newCategory.value.category_image) {
+      formData.append('category_image', newCategory.value.category_image);
     }
-}
+
+    await $fetch(`${api}/api/categories/`, {
+      method: 'POST',
+      body: formData,
+      headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
+    });
+    alert("Data added successfully");
+    closeAddCategoryModal();
+    resetNewCategory();
+    Object.keys(newCategory.value).forEach(key => newCategory.value[key] = null);
+    await refreshNuxtData();
+  } catch (error) {
+    alert('Failed to add category.');
+    console.error('API error:', error.data || error);}}
 
 async function deleteCategory() {
-    console.log('Deleting:', categoryToDelete.value);
     if (!categoryToDelete.value || !categoryToDelete.value.category_id) {
         alert('No category selected for deletion.');
         return;
     }
     try {
-        await $fetch(`${api}api/categories/${categoryToDelete.value.category_id}/`, {
+        await $fetch(`${api}/api/categories/${categoryToDelete.value.category_id}/`, {
             method: 'DELETE',
+            headers: getAuthHeaders(), // Add Authorization header
         });
         alert('Category deleted successfully.');
         isDeleteVisible.value = false;
@@ -100,16 +147,24 @@ async function deleteCategory() {
         console.error('API error:', error.data || error);
     }
 }
-
 async function updateCategory() {
     if (!categoryToUpdate.value || !categoryToUpdate.value.category_id) {
         alert('No category selected for update.');
         return;
     }
     try {
-        await $fetch(`${api}api/categories/${categoryToUpdate.value.category_id}/`, {
-            method: 'PATCH', // or 'PATCH' if your API supports partial updates
-            body: categoryToUpdate.value,
+        const formData = new FormData();
+        formData.append('category_name', categoryToUpdate.value.category_name);
+        formData.append('category_description', categoryToUpdate.value.category_description);
+        formData.append('category_isActive', String(categoryToUpdate.value.category_isActive));
+        if (categoryToUpdate.value.category_image) {
+            formData.append('category_image', categoryToUpdate.value.category_image);
+        }
+
+        await $fetch(`${api}/api/categories/${categoryToUpdate.value.category_id}/`, {
+            method: 'PATCH',
+            body: formData,
+            headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
         });
         alert('Category updated successfully.');
         isUpdateVisible.value = false;
@@ -202,10 +257,10 @@ async function deleteSelectedCategories() {
         return;
     }
     try {
-        // Delete each selected category (sequentially)
         for (const id of selectedCategoryIds.value) {
-            await $fetch(`${api}api/categories/${id}/`, {
+            await $fetch(`${api}/api/categories/${id}/`, {
                 method: 'DELETE',
+                headers: getAuthHeaders(), // Add Authorization header
             });
         }
         alert('Selected categories deleted successfully.');
@@ -323,6 +378,12 @@ async function deleteSelectedCategories() {
                                 <span class="font-semibold">Click to upload</span> or drag and drop
                                 <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX. 800×400px)</div>
                             </div>
+                            <input
+            type="file"
+            accept="image/*"
+            @change="e => newCategory.category_image = e.target.files[0]"
+            class="mt-2"
+        />
                         </div>
                         <div class="flex justify-end space-x-2 mt-6">
                             <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
