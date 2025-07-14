@@ -14,18 +14,26 @@ const props = defineProps({
   pageSize: {
     type: Number,
     default: 20
-  }
+  },
+  isDeletedView: { type: Boolean, default: false }
 })
 
 // Define emits for parent communication
 const emit = defineEmits([
   'update-user', 
-  'delete-user', 
+  'delete-user',
+  'restore-user',
+  'permanent-delete',
   'toggle-status', 
   'toggle-all-selected', 
   'toggle-user-selected',
-  'view-user' // Add this new emit
+  'view-user'
 ])
+
+const handleRestoreUser = (user) => {
+  closeDropdown()
+  emit('restore-user', user)
+}
 
 const viewUserDetails = (user) => {
   emit('view-user', user)
@@ -37,11 +45,13 @@ const paginatedUsers = computed(() => {
   return props.users.slice(start, start + props.pageSize)
 })
 
-const allSelected = computed({
-  get: () => props.users.length > 0 && props.users.every(u => u.selected),
-  set: (val) => {
-    emit('toggle-all-selected', val)
-  }
+const allSelected = computed(() => {
+  return paginatedUsers.value.length > 0 && paginatedUsers.value.every(user => user.selected)
+})
+
+const indeterminate = computed(() => {
+  const selectedCount = paginatedUsers.value.filter(user => user.selected).length
+  return selectedCount > 0 && selectedCount < paginatedUsers.value.length
 })
 
 const getUserRole = (user) => {
@@ -80,6 +90,60 @@ const getRoleDisplayName = (user) => {
   }
 }
 
+const getStatusText = (user) => {
+  if (user.is_deleted) return 'Deleted'
+  if (user.is_active) return 'Active'
+  return 'Suspended'
+}
+
+const getStatusBadgeClass = (user) => {
+  if (user.is_deleted) return 'text-red-600'
+  if (user.is_active) return 'text-green-600'
+  return 'text-yellow-600'
+}
+
+const openDropdownId = ref(null)
+
+const toggleDropdown = (userId) => {
+  if (openDropdownId.value === userId) {
+    openDropdownId.value = null
+  } else {
+    openDropdownId.value = userId
+  }
+}
+
+// Close dropdown when clicking outside
+const closeDropdown = () => {
+  openDropdownId.value = null
+}
+
+// Handle update user
+const handleUpdateUser = (user) => {
+  closeDropdown()
+  emit('update-user', user)
+}
+
+// Handle delete user
+const handleDeleteUser = (user) => {
+  closeDropdown()
+  if (props.isDeletedView) {
+    // In deleted view, emit permanent-delete
+    emit('permanent-delete', user)
+  } else {
+    // In normal view, emit regular delete (soft delete)
+    emit('delete-user', user)
+  }
+}
+
+// Close dropdown when clicking outside
+onMounted(() => {
+  document.addEventListener('click', closeDropdown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeDropdown)
+})
+
 // Event handlers
 const toggleUserSelected = (user) => {
   emit('toggle-user-selected', user)
@@ -96,27 +160,42 @@ const openUpdateModal = (user) => {
 const openDeleteModal = (user) => {
   emit('delete-user', user)
 }
+
+const toggleAllUsers = () => {
+  const newValue = !allSelected.value
+  emit('toggle-all-selected', newValue)
+}
+
+// Toggle individual user selection
+const toggleUserSelection = (user) => {
+  emit('toggle-user-selected', user)
+}
 </script>
 
 <template>
 <!-- User Table -->
-  <div class="overflow-x-auto bg-white rounded-lg">
+  <div class="bg-white rounded-lg">
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
-          <th class="px-4 py-3 w-12 text-center align-middle">
-            <input
-              class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300"
-              type="checkbox" 
-              v-model="allSelected" 
-            />
+          <th scope="col" class="p-4">
+            <div class="flex items-center">
+              <input 
+                :id="`checkbox-all-${isDeletedView ? 'deleted' : 'active'}`"
+                type="checkbox" 
+                :checked="allSelected"
+                :indeterminate="indeterminate"
+                @change="toggleAllUsers"
+                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+              <label :for="`checkbox-all-${isDeletedView ? 'deleted' : 'active'}`" class="sr-only">Select all</label>
+            </div>
           </th>
-          <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-          <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Avatar & Name</th>
-          <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
-          <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-          <th class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-          <th class="p-4 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Avatar & Name</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+          <th scope="col" class="p-4 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
@@ -137,7 +216,8 @@ const openDeleteModal = (user) => {
           <td class="px-4 py-3 font-semibold">{{ user.user_id }}</td>
           <td class="px-4 py-3">
             <div class="flex items-center">
-              <img :src="user.avatar" class="w-8 h-8 rounded-full mr-3" :alt="user.user_name" />
+              <img :src="user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_name)}`" 
+              class="w-8 h-8 rounded-full mr-3" :alt="user.user_name" />
               <div>
                 <div class="font-semibold">{{ user.user_name }}</div>
                 <div v-if="user.first_name || user.last_name" class="text-sm text-gray-500">
@@ -164,35 +244,85 @@ const openDeleteModal = (user) => {
                 <div
                   class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:w-5 after:h-5 after:transition-all peer-checked:bg-green-600">
                 </div>
-                <span class="ml-3 text-sm font-medium" :class="user.is_active ? 'text-green-600' : 'text-red-600'">
-                  {{ user.is_active ? 'Active' : 'Inactive' }}
+                <span class="ml-3 text-sm font-medium" :class="getStatusBadgeClass(user)">
+                  {{ getStatusText(user) }}
                 </span>
               </label>
             </div>
           </td>
           <td class="p-4 space-x-2 whitespace-nowrap" @click.stop>
-            <div class="flex justify-center items-center space-x-2">
-              <button type="button" @click.stop="openUpdateModal(user)"
-                class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] hover:text-white rounded-lg bg-primary-700 hover:bg-green-600 focus:ring-4 focus:ring-primary-300">
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z">
-                  </path>
-                  <path fill-rule="evenodd"
-                    d="M2 6a2 2 0 002-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
-                    clip-rule="evenodd"></path>
-                </svg>
-                Update
-              </button>
-               <button type="button" @click="openDeleteModal(user)"
-                class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300">
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                    clip-rule="evenodd" />
-                </svg>
-                Delete item
-              </button>
+            <div class="flex justify-center items-center">
+              <!-- Dropdown container -->
+              <div class="relative inline-block text-left">
+                <!-- Ellipsis button -->
+                <button 
+                  type="button" 
+                  @click.stop="toggleDropdown(user.user_id)"
+                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-transparent border-0 rounded-lg hover:text-gray-900 hover:bg-gray-100 focus:ring-4 focus:ring-gray-300"
+                  :id="`dropdown-button-${user.user_id}`"
+                  aria-expanded="false"
+                  aria-haspopup="true">
+                  <span class="sr-only">Open dropdown</span>
+                  <!-- Three dots icon -->
+                  <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 3">
+                    <path d="M2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm6.041 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM14 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Z"/>
+                  </svg>
+                </button>
+                
+                <!-- Dropdown menu -->
+                <div 
+                  v-show="openDropdownId === user.user_id"
+                  :id="`dropdown-${user.user_id}`"
+                  class="absolute right-0 z-10 mt-2 w-44 bg-white divide-y divide-gray-100 rounded-lg shadow-lg border border-gray-200"
+                  role="menu"
+                  :aria-labelledby="`dropdown-button-${user.user_id}`">
+                  <ul class="py-2 text-sm text-gray-700" role="none">
+                    
+                    <!-- Restore option (only show in deleted view) -->
+                    <li v-if="isDeletedView" role="none">
+                      <button 
+                        type="button"
+                        @click.stop="handleRestoreUser(user)"
+                        class="flex items-center w-full px-4 py-2 text-left text-green-600 hover:bg-green-50 focus:bg-green-50"
+                        role="menuitem">
+                        <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                        </svg>
+                        Restore & Enable
+                      </button>
+                    </li>
+
+                    <!-- Update option (only show in normal view, NOT in deleted view) -->
+                    <li v-if="!isDeletedView" role="none">
+                      <button 
+                        type="button"
+                        @click.stop="handleUpdateUser(user)"
+                        class="flex items-center w-full px-4 py-2 text-left hover:bg-gray-100 focus:bg-gray-100"
+                        role="menuitem">
+                        <svg class="w-4 h-4 mr-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z"></path>
+                          <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd"></path>
+                        </svg>
+                        Update
+                      </button>
+                    </li>
+
+                    <!-- Delete option (show in both views but with different text) -->
+                    <li role="none">
+                      <button 
+                        type="button"
+                        @click.stop="handleDeleteUser(user)"
+                        class="flex items-center w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 focus:bg-red-50"
+                        role="menuitem">
+                        <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                        {{ isDeletedView ? 'Permanently Delete' : 'Delete' }}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </td>
         </tr>

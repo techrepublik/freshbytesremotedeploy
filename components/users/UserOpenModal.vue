@@ -57,7 +57,7 @@ const getStatusBadgeClass = computed(() => {
   
   return props.user.is_active
     ? 'px-3 py-1 text-xs font-medium bg-green-100 text-green-800 rounded'
-    : 'px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded';
+    : 'px-3 py-1 text-xs font-medium bg-orange-100 text-yellow-800 rounded';
 });
 </script>
 
@@ -86,7 +86,7 @@ const getStatusBadgeClass = computed(() => {
           <div class="text-gray-600">{{ user.first_name }} {{ user.last_name }}</div>
           <div class="mt-2 flex items-center space-x-2">
             <span :class="getRoleBadgeClass">{{ getUserRole(user) }}</span>
-            <span :class="getStatusBadgeClass">{{ user.is_active ? 'Active' : 'Inactive' }}</span>
+            <span :class="getStatusBadgeClass">{{ user.is_active ? 'Active' : 'Suspended' }}</span>
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ const getStatusBadgeClass = computed(() => {
             </li>
             <li class="flex items-start">
               <span class="text-gray-500 w-24 flex-shrink-0">Status:</span>
-              <span class="text-gray-900">{{ user.is_active ? 'Active' : 'Inactive' }}</span>
+              <span class="text-gray-900">{{ user.is_active ? 'Active' : 'Suspended' }}</span>
             </li>
             <li class="flex items-start">
               <span class="text-gray-500 w-24 flex-shrink-0">Admin:</span>
