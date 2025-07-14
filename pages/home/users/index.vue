@@ -49,7 +49,7 @@
 
   // Fetch users from your API with filters
   const { data, pending, error, refresh } = await useFetch(
-    () => `${api}/api/users/`,
+    () => `${api}/api/users/?is_deleted=false`,
     { 
       server: false,
       headers: computed(() => getAuthHeaders()),
@@ -72,9 +72,15 @@
 
   const getUserRole = (user) => {
     if (user.is_superuser) return 'Administrator'
-    if (user.role === 'seller') return 'seller'
-    return 'customer'
+    if (user.role === 'seller') return 'Seller'
+    return 'Customer'
   }
+
+  const getUserStatus = (user) => {
+  if (user.is_deleted) return 'Deleted'
+  if (user.is_active) return 'Active'
+  return 'Suspended'
+}
 
   // Apply filters locally to allUsers
   const filteredUsers = computed(() => {
@@ -101,12 +107,15 @@
   
   // Apply status filter
   if (selectedStatus.value) {
-    const isActive = selectedStatus.value === 'Active';
-    filtered = filtered.filter(user => user.is_active === isActive);
+    if (selectedStatus.value === 'Active') {
+      filtered = filtered.filter(user => user.is_active === true && user.is_deleted === false);
+    } else if (selectedStatus.value === 'Suspended') {
+      filtered = filtered.filter(user => user.is_active === false && user.is_deleted === false);
+    }
   }
   
   return filtered;
-  });
+});
 
   // Paginate the filtered results
   const paginatedUsers = computed(() => {
@@ -127,9 +136,11 @@
   })
 
   // Watch for API data changes (only runs once when component loads)
-  watch(data, (val) => {
-    if (val && Array.isArray(val) && val.length > 0) {
-      allUsers.value = val.map(u => ({
+watch(data, (val) => {
+  if (val && Array.isArray(val) && val.length > 0) {
+    allUsers.value = val
+      .filter(u => u.is_deleted === false)
+      .map(u => ({
         user_id: u.user_id,
         user_name: u.user_name,
         first_name: u.first_name || '',
@@ -139,14 +150,15 @@
         avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.user_name)}`,
         user_email: u.user_email,
         role: u.role || '',
-        status: u.is_active ? 'Active' : 'Inactive',
         is_superuser: u.is_superuser || false,
         is_active: u.is_active || false,
         created_at: u.created_at,
         updated_at: u.updated_at,
+        deleted_at: u.deleted_at,
+        is_deleted: u.is_deleted,
         selected: false
       }))
-    } else {
+  } else {
       // Add test data when no API data - with new role logic
       allUsers.value = Array.from({ length: 50 }, (_, i) => {
         let role, is_admin, is_superuser;
@@ -178,7 +190,7 @@
           avatar: `https://ui-avatars.com/api/?name=User${i + 1}`,
           user_email: `user${i + 1}@example.com`,
           role: role,
-          status: i % 7 === 0 ? 'Inactive' : 'Active',
+          status: i % 7 === 0 ? 'Suspended' : 'Active',
           is_superuser: is_superuser,
           is_active: i % 7 !== 0,
           created_at: new Date().toISOString(),
@@ -337,8 +349,8 @@
 
   async function toggleUserStatus(user) {
     try {
-      // Toggle the status locally first for immediate UI feedback
-      user.is_active = !user.is_active;
+      // Toggle between Active and Suspended (not deleted)
+      const newStatus = !user.is_active;
       
       // Call the API to update the status
       await $fetch(`${api}/api/users/${user.user_id}/`, {
@@ -348,15 +360,16 @@
           'Content-Type': 'application/json'
         },
         body: {
-          is_active: user.is_active
+          is_active: newStatus
+          // is_deleted stays false for current users
         }
       });
       
-      // Notify user
-      console.log(`User ${user.user_name} status updated successfully`);
+      // Update locally only after successful API call
+      user.is_active = newStatus;
+      
+      console.log(`User ${user.user_name} status updated to ${newStatus ? 'Active' : 'Suspended'}`);
     } catch (error) {
-      // If API call fails, revert the local change
-      user.is_active = !user.is_active;
       console.error('Failed to update user status:', error);
       alert('Failed to update user status. Please try again.');
     }
@@ -374,11 +387,11 @@
     showUserAddModal.value = false
   }
 
-  const handleToggleAllSelected = (value) => {
+  const toggleAllSelected = (value) => {
     paginatedUsers.value.forEach(u => u.selected = value)
   }
 
-  const handleToggleUserSelected = (user) => {
+  const toggleUserSelected = (user) => {
     user.selected = !user.selected
   }
 
@@ -388,10 +401,6 @@
 
   const handleDeleteUser = (user) => {
     openDeleteModal(user)
-  }
-
-  const handleToggleUserStatus = (user) => {
-    toggleUserActive(user)
   }
 
   function handleUserAddSuccess() { 
@@ -439,6 +448,7 @@
     :show="showDeleteModal" 
     :userToDelete="userToDelete" 
     :usersToDelete="usersToDelete"
+    :isPermanentDelete="false"
     @close="closeDeleteModal" 
     @confirm="handleUserDeleteSuccess"
     @reset-selections="resetUserSelections" 
