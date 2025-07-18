@@ -17,9 +17,56 @@ const searchQuery = ref('');
 const statusFilter = ref('');
 const discountTypeFilter = ref('');
 
-const { data: promos, pending: pendingPromos } = useFetch(`${api}api/promos/`, { server: false });
-const { data: sellers, pending: pendingSellers } = useFetch(`${api}api/sellers/`, { server: false });
-const { data: products, pending: pendingProducts } = useFetch(`${api}api/products/`, { server: false });
+const getAuthHeaders = () => {
+    const accessTokenCookie = useCookie('auth-access-token')
+    const token = accessTokenCookie.value
+
+    return token ? {
+        Authorization: `Bearer ${token}`
+    } : {}
+}
+const { data: promos, pending: pendingPromos, refresh: refreshPromos } = await useFetch(
+    `${api}/api/products/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Products API Error:', response.status, response._data);
+            if (response.status === 401) {
+                navigateTo('/login');
+            }
+        }
+    }
+);
+
+const { data: sellers, pending: pendingSellers, refresh: refreshSellers } = await useFetch(
+    `${api}/api/products/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Products API Error:', response.status, response._data);
+            if (response.status === 401) {
+                navigateTo('/login');
+            }
+        }
+    }
+);
+
+const { data: products, pending: pendingProducts, refresh: refreshProducts } = await useFetch(
+    `${api}/api/products/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Products API Error:', response.status, response._data);
+            if (response.status === 401) {
+                navigateTo('/login');
+            }
+        }
+    }
+);
+
 // If sellers is a single object, convert to array
 const sellersArray = computed(() => {
     if (!sellers.value) return [];
