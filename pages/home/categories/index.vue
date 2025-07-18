@@ -5,71 +5,65 @@ definePageMeta({
     layout: "home",
 });
 
+
 const config = useRuntimeConfig();
 const api = config.public.API_LINK;
 
 const accessToken = ref('');
 
-// Function to get auth headers
+import CategoryAddModal from '@/components/categories/CategoryAddModal.vue'
+import CategoryShowModal from '@/components/categories/CategoryShowModal.vue'
+import CategoryDeleteModal from '@/components/categories/CategoryDeleteModal.vue'
 
 const getAuthHeaders = () => {
-  const accessTokenCookie = useCookie('auth-access-token')
-  const token = accessTokenCookie.value
-  
-  return token ? {
-    Authorization: `Bearer ${token}`
-  } : {}
+    const accessTokenCookie = useCookie('auth-access-token')
+    const token = accessTokenCookie.value
+
+    return token ? {
+        Authorization: `Bearer ${token}`
+    } : {}
 }
 
 // Products fetch with auth headers
 const { data: products, pending: pendingProducts, refresh: refreshProducts } = await useFetch(
-  `${api}/api/products/`,
-  {
-    server: false,
-    headers: computed(() => getAuthHeaders()),
-    onResponseError({ response }) {
-      console.error('Products API Error:', response.status, response._data);
-      if (response.status === 401) {
-        navigateTo('/login');
-      }
+    `${api}/api/products/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Products API Error:', response.status, response._data);
+            if (response.status === 401) {
+                navigateTo('/login');
+            }
+        }
     }
-  }
 );
 
 // Categories fetch with auth headers
 const { data: categories, pending: pendingCategories, refresh: refreshCategories } = await useFetch(
-  `${api}/api/categories/`,
-  {
-    server: false,
-    headers: computed(() => getAuthHeaders()),
-    onResponseError({ response }) {
-      console.error('Categories API Error:', response.status, response._data);
+    `${api}/api/categories/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Categories API Error:', response.status, response._data);
+        }
     }
-  }
 );
 
 // Subcategories fetch with auth headers
 const { data: subcategories, pending: pendingSubcategories, refresh: refreshSubcategories } = await useFetch(
-  `${api}/api/subcategories/`,
-  {
-    server: false,
-    headers: computed(() => getAuthHeaders()),
-    onResponseError({ response }) {
-      console.error('Subcategories API Error:', response.status, response._data);
+    `${api}/api/subcategories/`,
+    {
+        server: false,
+        headers: computed(() => getAuthHeaders()),
+        onResponseError({ response }) {
+            console.error('Subcategories API Error:', response.status, response._data);
+        }
     }
-  }
 );
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
-
-const newCategory = ref({
-    category_name: "",
-    category_description: "",
-    category_isActive: true,
-    category_image: null,
-    created_at: null,
-    updated_at: null
-});
 
 const searchQuery = ref('');
 const filteredCategories = computed(() => {
@@ -99,54 +93,19 @@ const categoryToUpdate = ref(null);
 
 const isDeleteVisible = ref(false);
 const categoryToDelete = ref(null);
-const selectedCategoryIds = ref([]);
 
-
-
-// Add Category
-async function addCategory() {
-  try {
-    const formData = new FormData();
-    formData.append('category_name', newCategory.value.category_name);
-    formData.append('category_description', newCategory.value.category_description);
-    formData.append('category_isActive', String(newCategory.value.category_isActive));
-    if (newCategory.value.category_image) {
-      formData.append('category_image', newCategory.value.category_image);
-    }
-
-    await $fetch(`${api}/api/categories/`, {
-      method: 'POST',
-      body: formData,
-      headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
-    });
-    alert("Data added successfully");
-    closeAddCategoryModal();
-    resetNewCategory();
-    Object.keys(newCategory.value).forEach(key => newCategory.value[key] = null);
-    await refreshNuxtData();
-  } catch (error) {
-    alert('Failed to add category.');
-    console.error('API error:', error.data || error);}}
-
-async function deleteCategory() {
-    if (!categoryToDelete.value || !categoryToDelete.value.category_id) {
-        alert('No category selected for deletion.');
-        return;
-    }
-    try {
-        await $fetch(`${api}/api/categories/${categoryToDelete.value.category_id}/`, {
-            method: 'DELETE',
-            headers: getAuthHeaders(), // Add Authorization header
-        });
-        alert('Category deleted successfully.');
-        isDeleteVisible.value = false;
-        categoryToDelete.value = null;
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to delete category.');
-        console.error('API error:', error.data || error);
-    }
+function openDeleteModal(category) {
+    categoryToDelete.value = category;
+    isDeleteVisible.value = true;
 }
+function handleModalClose() {
+  isDeleteVisible.value = false
+  selectedCategory.value = null
+}
+
+const selectedCategoryIds = ref([]);
+const isAddVisible = ref(false);
+
 async function updateCategory() {
     if (!categoryToUpdate.value || !categoryToUpdate.value.category_id) {
         alert('No category selected for update.');
@@ -176,21 +135,6 @@ async function updateCategory() {
     }
 }
 
-function resetNewCategory() {
-    newCategory.value = {
-        category_name: "",
-        category_description: "",
-        category_isActive: true,
-        category_image: null,
-        created_at: null,
-        updated_at: null
-    };
-}
-
-function closeAddCategoryModal() {
-    resetNewCategory();
-    document.getElementById('addCategory')?.classList.add('hidden');
-}
 
 function showCategoryModal(category) {
     selectedCategory.value = category;
@@ -201,12 +145,6 @@ function openUpdateModal(category) {
     console.log('Selected for update:', category);
     categoryToUpdate.value = category;
     isUpdateVisible.value = true;
-}
-
-function openDeleteModal(category) {
-    console.log('Selected for delete:', category);
-    categoryToDelete.value = category;
-    isDeleteVisible.value = true;
 }
 
 function closeDeleteModal() {
@@ -331,87 +269,28 @@ async function deleteSelectedCategories() {
                 Categories
             </h1>
             <div class="flex items-center space-x-2">
-                <button type="button" onclick="document.getElementById('addCategory').classList.remove('hidden')"
+                <button @click="isAddVisible = true"
                     class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition">
                     <span class="mr-2">+</span> Add new category
                 </button>
             </div>
+            <CategoryAddModal :visible="isAddVisible" :category="newCategory" @submit="addCategory"
+                @close="() => isAddVisible = false" />
+        </div>
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                <div class="flex gap-2 flex-wrap">
+                    <input type="text" v-model="searchQuery" placeholder="Search"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <select v-model="statusFilter"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Status</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Active">Active</option>
+                    </select>
 
-            <div id="addCategory" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30 hidden">
-                <div
-                    class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
-
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Add Category</h2>
-                    <form class="space-y-4">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block mb-1 font-medium">Category Name</label>
-                                <input v-model="newCategory.category_name" type="text"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                    placeholder="Type product name" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Category Status</label>
-                                <select v-model="newCategory.category_isActive"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
-                                    <option disabled value="">Select Category Status</option>
-                                    <option :value="false">Inactive</option>
-                                    <option :value="true">Active</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Category Description</label>
-                                <textarea v-model="newCategory.category_description"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                                    rows="3" placeholder="Write product description here"></textarea>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block mb-1 font-medium">Category Image</label>
-                            <div
-                                class="w-full h-40 border-2 border-dashed border-gray-300 rounded flex flex-col items-center justify-center text-gray-400 bg-gray-50">
-                                <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path d="M12 4v16m8-8H4" />
-                                </svg>
-                                <span class="font-semibold">Click to upload</span> or drag and drop
-                                <div class="text-xs mt-1">SVG, PNG, JPG or GIF (MAX. 800×400px)</div>
-                            </div>
-                            <input
-            type="file"
-            accept="image/*"
-            @change="e => newCategory.category_image = e.target.files[0]"
-            class="mt-2"
-        />
-                        </div>
-                        <div class="flex justify-end space-x-2 mt-6">
-                            <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                                @click="addCategory">Add
-                                category</button>
-                            <button type="button"
-                                onclick="document.getElementById('addCategory').classList.add('hidden')"
-                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div class="flex gap-2 flex-wrap">
-                <input type="text" v-model="searchQuery" placeholder="Search"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                <select v-model="statusFilter"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Status</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Active">Active</option>
-                </select>
-                
-            </div>
-        </div>
+            <CategoryShowModal :visible="isCategoryVisible" :category="selectedCategory" @close="() => { isCategoryVisible = false; selectedCategory = null; }" />
         <div class="flex justify-end mb-4">
             <button class="px-4 py-2 rounded 
       transition 
@@ -528,87 +407,6 @@ async function deleteSelectedCategories() {
                                                 </svg>
                                                 Update
                                             </button>
-
-
-                                            <div id="showCategory" v-if="isCategoryVisible"
-                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-
-                                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto"
-                                                    @click.stop>
-                                                    <div class="flex flex-col gap-1 mb-4">
-
-
-                                                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
-                                                            selectedCategory?.category_name }}</h2>
-                                                    </div>
-
-
-                                                    <div class="flex gap-4 mb-4">
-                                                        <div
-                                                            class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
-                                                            <img src="\assets\images\logos-12-12.png" alt="Product"
-                                                                class="object-contain h-20" />
-                                                        </div>
-                                                    </div>
-
-                                                    <form class="space-y-4">
-                                                        <div class="grid grid-cols-2 gap-4">
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Category
-                                                                    Name</label>
-                                                                <div
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                    {{ selectedCategory?.category_name }}
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Category
-                                                                    Status</label>
-                                                                <div
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                    {{ selectedCategory?.category_isActive ? 'Active'
-                                                                        : 'Inactive' }}
-                                                                </div>
-                                                            </div>
-                                                            <div>
-                                                                <label class="block mb-1 font-medium">Category
-                                                                    Description</label>
-                                                                <textarea rows="3" disabled
-                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedCategory?.category_description }}</textarea>
-                                                            </div>
-                                                            <div class="col-span-2">
-                                                                <h2
-                                                                    class="text-base font-semibold mb-2 text-gray-900 dark:text-white">
-                                                                    Dates</h2>
-                                                                <div class="grid grid-cols-2 gap-4"></div>
-                                                                <div>
-                                                                    <label class="block mb-1 font-medium">Created
-                                                                        at</label>
-                                                                    <textarea rows="3" disabled
-                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.created_at) }}</textarea>
-                                                                </div>
-                                                                <div>
-                                                                    <label class="block mb-1 font-medium">Updated
-                                                                        at</label>
-                                                                    <textarea rows="3" disabled
-                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedCategory?.updated_at) }}</textarea>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="flex justify-end space-x-2 mt-6">
-                                                            <button type="button"
-                                                                @click="isCategoryVisible = false; selectedCategory = null"
-                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                                                Cancel
-                                                            </button>
-
-
-                                                        </div>
-
-                                                    </form>
-                                                </div>
-                                            </div>
-
                                             <button type="button" @click.stop="openDeleteModal(category)"
                                                 class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900">
                                                 <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -695,28 +493,6 @@ async function deleteSelectedCategories() {
                                 </form>
                             </div>
                         </div>
-                        <div v-if="isDeleteVisible" id="deleteModal"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                            <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                                    Confirm Deletion
-                                </h2>
-                                <p class="text-gray-600 dark:text-gray-300 mb-6">
-                                    Are you sure you want to delete this category?<br>
-                                    This action cannot be undone.
-                                </p>
-                                <div class="flex justify-end gap-2">
-                                    <button @click="isDeleteVisible = false; categoryToDelete = null"
-                                        class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                                        Cancel
-                                    </button>
-                                    <button @click="deleteCategory"
-                                        class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                                        Yes, delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                         <hr class="my-4 border-gray-200 dark:border-gray-700">
                         <div class="flex justify-end items-center space-x-4 mb-4">
                             <button class="text-sm text-gray-600 hover:underline">Print barcodes</button>
@@ -727,32 +503,16 @@ async function deleteSelectedCategories() {
                             </button>
                         </div>
                         <!-- Footer -->
-                        <footer
-                            class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
-                            <div class="flex items-center space-x-4">
-                                <span>© 2025 FreshBytes. All rights reserved.</span>
-                                <a href="#" class="hover:underline">Privacy Policy</a>
-                                <a href="#" class="hover:underline">API</a>
-                                <a href="#" class="hover:underline">Contact</a>
-                            </div>
-
-                            <div class="flex items-center space-x-2 mt-2 md:mt-0">
-                                <select class="text-sm bg-transparent focus:outline-none dark:text-white">
-                                    <option selected>English (US)</option>
-                                    <!-- Add more language options -->
-                                </select>
-                                <button class="text-gray-500 dark:text-gray-300">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 4v16m8-8H4" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </footer>
+                        <Footer />
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    <CategoryDeleteModal
+      :visible="isDeleteVisible"
+      :category="categoryToDelete"
+      @close="closeDeleteModal"
+      @submit="refreshCategories"
+    />
 </template>
