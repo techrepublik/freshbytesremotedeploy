@@ -11,6 +11,7 @@ const api = config.public.API_LINK
 
 const loading = ref(false)
 const products = ref([])
+const categories = ref([])
 const analytics = ref({
   fastMoving: [],
   slowMoving: [],
@@ -33,6 +34,18 @@ const getAuthHeaders = () => {
   } : {}
 }
 
+// Fetch categories
+const fetchCategories = async () => {
+  try {
+    const response = await $fetch(`${api}/api/categories/`, {
+      headers: getAuthHeaders()
+    })
+    categories.value = response
+  } catch (error) {
+    console.error('Failed to fetch categories:', error)
+  }
+}
+
 // Fetch products and calculate analytics
 const fetchAnalytics = async () => {
   loading.value = true
@@ -48,6 +61,13 @@ const fetchAnalytics = async () => {
   } finally {
     loading.value = false
   }
+}
+
+// Helper function to get category name
+const getCategoryName = (categoryId) => {
+  if (!categories.value || !categoryId) return 'Unknown'
+  const category = categories.value.find(cat => cat.category_id === categoryId)
+  return category ? category.category_name : 'Unknown'
 }
 
 // Calculate analytics data
@@ -91,14 +111,14 @@ const calculateAnalytics = () => {
 
   analytics.value.slowMoving = slowMovingData
 
-  // Top categories by sales
+  // Top categories by sales - using categories API
   const categoryStats = {}
   products.value.forEach(product => {
     const categoryId = product.category_id
     if (!categoryStats[categoryId]) {
       categoryStats[categoryId] = {
         category_id: categoryId,
-        category_name: product.category_name || 'Unknown',
+        category_name: getCategoryName(categoryId),
         totalSales: 0,
         productCount: 0,
         totalRevenue: 0
@@ -150,8 +170,12 @@ const formatNumber = (num) => {
   return new Intl.NumberFormat().format(num)
 }
 
-onMounted(() => {
-  fetchAnalytics()
+// Initialize data
+onMounted(async () => {
+  await Promise.all([
+    fetchCategories(),
+    fetchAnalytics()
+  ])
 })
 </script>
 
@@ -220,7 +244,7 @@ onMounted(() => {
                               {{ product.product_name }}
                             </div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">
-                              {{ product.category_name }}
+                              {{ getCategoryName(product.category_id) }}
                             </div>
                           </div>
                         </div>

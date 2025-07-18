@@ -14,6 +14,10 @@ const props = defineProps({
         type: Array,
         default: () => []
     },
+    users: {
+        type: Array,
+        default: () => []
+    },
     allSelected: {
         type: Boolean,
         default: false
@@ -42,9 +46,15 @@ function getCategoryName(categoryId) {
 }
 
 function getSellerName(sellerId) {
-    if (!props.sellers || !sellerId) return 'N/A';
+    if (!props.sellers || !props.users || !sellerId) return 'N/A';
+    
+    // First, find the seller by seller_id
     const seller = props.sellers.find(sel => sel.seller_id === sellerId);
-    return seller ? seller.seller_name : 'N/A';
+    if (!seller || !seller.user_id) return 'N/A';
+    
+    // Then, find the user by user_id to get the user_name
+    const user = props.users.find(u => u.user_id === seller.user_id);
+    return user ? user.user_name : 'N/A';
 }
 
 function formatDate(dateStr) {
@@ -205,16 +215,14 @@ onUnmounted(() => {
                                 
                                 <!-- Seller Name -->
                                 <td class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                    <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">
+                                    <span class="bg-purple-100 text-purple-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-purple-900 dark:text-purple-300">
                                         {{ getSellerName(product.seller_id) }}
                                     </span>
                                 </td>
                                 
                                 <!-- Category -->
                                 <td class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                                        {{ getCategoryName(product.category_id) }}
-                                    </span>
+                                    <span>{{ getCategoryName(product.category_id) }}</span>
                                 </td>
                                 
                                 <!-- Price -->

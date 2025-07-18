@@ -632,6 +632,7 @@ onUnmounted(() => {
         :products="paginatedProducts"
         :categories="categories"
         :sellers="sellers"
+        :users="users"
         :all-selected="allSelected"
         @view-product="handleViewProduct"
         @update-product="handleUpdateProduct"
