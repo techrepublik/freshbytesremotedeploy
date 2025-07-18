@@ -365,7 +365,4 @@ function resetUserSelections() {
     :page-size="pageSize"
     @page-changed="handlePageChange"
   />
-  
-  <!-- Footer -->
-  <Footer />
 </template>

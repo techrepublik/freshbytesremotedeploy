@@ -484,8 +484,4 @@ watch(data, (val) => {
     :page-size="pageSize"
     @page-changed="handlePageChange"
   />
-  
-  <!-- Footer -->
-  <Footer />
-
 </template>

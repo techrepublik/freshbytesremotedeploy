@@ -1,24 +1,50 @@
 <script setup>
-    defineProps({
+    const props = defineProps({
         selectedProduct: {
             type: Object,
-            required: true
+            default: null
         },
         categories: {
             type: Array,
-            required: true
+            default: () => []
         },
         subcategories: {
             type: Array,
-            required: true
+            default: () => []
+        },
+        sellers: {
+            type: Array,
+            default: () => []
         },
         showProductModal: {
             type: Boolean,
-            required: true
-        },
+            default: false
+        }
     })
 
     const emit = defineEmits(['closeProductModal', 'update-product', 'delete-product']); // List of component actions
+
+    // Computed property to get seller name
+    const sellerName = computed(() => {
+        if (!props.selectedProduct?.seller_id) {
+            console.log('No seller_id found in product')
+            return 'Unknown Seller'
+        }
+        
+        if (!props.sellers?.length) {
+            console.log('No sellers data available')
+            return 'Loading...'
+        }
+        
+        const seller = props.sellers.find(s => s.user_id === props.selectedProduct.seller_id)
+        console.log('Found seller:', seller)
+        
+        if (!seller) {
+            return 'Seller Not Found'
+        }
+        
+        return seller.user_name || `${seller.first_name || ''} ${seller.last_name || ''}`.trim() || 'Unknown Seller'
+    })
 
     function closeModal() {
         emit('closeProductModal');
@@ -45,12 +71,20 @@
             <!-- Close button -->
             <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl" @click="closeModal"
                 aria-label="Close">&times;</button>
+
             <!-- Product Title and Price -->
             <div class="flex flex-col gap-1 mb-4">
                 <h2 class="text-2xl font-bold text-gray-900">{{ selectedProduct.product_name }}</h2>
-                <span class="text-xl font-semibold text-gray-700">₱{{ selectedProduct.product_price
-                }}</span>
+                <span class="text-xl font-semibold text-gray-700">₱{{ selectedProduct.product_price }}</span>
+                <!-- Seller Info -->
+                <div class="flex items-center gap-2 text-sm text-gray-600">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Sold by: <span class="font-medium text-gray-900">{{ sellerName }}</span></span>
+                </div>
             </div>
+
             <!-- Images (placeholder) -->
             <div class="flex gap-4 mb-4">
                 <div class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
@@ -66,6 +100,7 @@
                     <img src="\assets\images\logos-12-12.png" alt="Product" class="object-contain h-20" />
                 </div>
             </div>
+
             <!-- Brief Description -->
             <div class="mb-2">
                 <div class="font-semibold text-gray-900 mb-1">Brief Description</div>
@@ -73,6 +108,7 @@
                     {{ selectedProduct.product_brief_description || 'No brief description available.' }}
                 </div>
             </div>
+
             <!-- Detailed Description -->
             <div class="mb-2">
                 <div class="font-semibold text-gray-900 mb-1">Detailed Description</div>
@@ -80,8 +116,13 @@
                     {{ selectedProduct.product_full_description || 'No detailed description available.' }}
                 </div>
             </div>
+
             <!-- Info Grid -->
             <div class="grid grid-cols-2 gap-4 mb-4">
+                <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
+                    <div class="text-xs text-gray-500">Seller</div>
+                    <div class="font-medium text-gray-900">{{ sellerName }}</div>
+                </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                     <div class="text-xs text-gray-500">Category</div>
                     <div class="font-medium text-gray-900"> {{categories.find(cat =>
@@ -171,14 +212,8 @@
                     </div>
                 </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
-                    <div class="text-xs text-gray-500">Offer Start Date</div>
-                    <div class="font-medium text-gray-900">{{
-                        formatDate(selectedProduct.offer_start_date) }}</div>
-                </div>
-                <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
-                    <div class="text-xs text-gray-500">Offer End Date</div>
-                    <div class="font-medium text-gray-900">{{
-                        formatDate(selectedProduct.offer_end_date) }}</div>
+                    <div class="text-xs text-gray-500">Top Rated?</div>
+                    <div class="font-medium text-gray-900">{{ selectedProduct.top_rated }}</div>
                 </div>
                 <div class="bg-gray-50 border-1 border-gray-400 rounded-lg p-3">
                     <div class="text-xs text-gray-500">Sell Count</div>
@@ -203,6 +238,7 @@
                     <div class="font-medium text-gray-900">{{ selectedProduct.has_promo }}</div>
                 </div>
             </div>
+
             <!-- Action Buttons -->
             <div class="flex justify-end space-x-2 mt-6">
                 <button class="flex items-center px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm" @click="$emit('update-product', selectedProduct)">

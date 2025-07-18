@@ -1,132 +1,130 @@
 <script setup>
-    import { ref, watch } from 'vue'
+import { ref, watch, computed, toRefs } from 'vue'
 
-    const props = defineProps({
-        showAddProductModal: {
-            type: Boolean,
-            required: true
-        },
-        newProduct: {
-            type: Object,
-            required: true
-        },
-        sellers: {
-            type: Array,
-            required: true
-        },
-        subcategories: {
-            type: Array,
-            required: true
-        },
-        users: {
-            type: Array,
-            required: true
-        },
-        categories: {
-            type: Array,
-            required: true
+const props = defineProps({
+    showAddProductModal: { type: Boolean, required: true },
+    newProduct: { type: Object, required: true },
+    sellers: { type: Array, default: () => [] },
+    users: { type: Array, default: () => [] },
+    categories: { type: Array, default: () => [] },
+    subcategories: { type: Array, default: () => [] }
+});
+
+const emit = defineEmits(['close-add-product-modal', 'add-product', 'update:productImages']);
+
+// Local reactive data
+const productImages = ref([]);
+const productImagesPreview = ref([]);
+const locationQuery = ref('');
+const locationSuggestions = ref([]);
+let debounceTimeout = null;
+
+// Computed subcategories based on selected category
+const filteredSubcategories = computed(() => {
+    if (!props.newProduct.category_id) return [];
+    return props.subcategories.filter(sub => sub.category_id === props.newProduct.category_id);
+});
+
+// Watch for category changes to reset subcategory
+watch(() => props.newProduct.category_id, () => {
+    props.newProduct.sub_category_id = null;
+});
+
+// Location search functionality
+watch(locationQuery, (query) => {
+    clearTimeout(debounceTimeout);
+    if (!query) {
+        locationSuggestions.value = [];
+        return;
+    }
+    debounceTimeout = setTimeout(async () => {
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+            locationSuggestions.value = await res.json();
+        } catch (error) {
+            console.error('Location search error:', error);
+            locationSuggestions.value = [];
         }
-    })
+    }, 400);
+});
 
-    // grab the emit helper
-    const emit = defineEmits(['closeAddProductModal','addProduct'])
+// Location selection
+function selectLocation(suggestion) {
+    props.newProduct.product_location = suggestion.display_name;
+    locationQuery.value = suggestion.display_name;
+    locationSuggestions.value = [];
+}
 
-    // wrap the emit so the template can call it
-    function onAdd() {
-        emit('addProduct')
-        emit('update:productImages', filesArray)
-    }
+// Image handling functions
+function onProductImagesChange(event) {
+    const files = Array.from(event.target.files || []);
+    handleProductImages(files);
+}
 
-    function closeAddProductModal() {
-        emit('closeAddProductModal')
-    }
+function onProductImagesDrop(event) {
+    const files = Array.from(event.dataTransfer.files || []);
+    handleProductImages(files);
+}
 
-    let debounceTimeout = null
-
-    const locationQuery = ref('')
-    const locationSuggestions = ref([])
-
-    watch(locationQuery, (query) => {
-        clearTimeout(debounceTimeout)
-        if (!query) {
-            locationSuggestions.value = []
-            return
-        }
-        debounceTimeout = setTimeout(async () => {
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
-            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
-            locationSuggestions.value = await res.json()
-        }, 400) // 400ms debounce
-    })
-
-    function selectLocation(suggestion) {
-        props.newProduct.product_location = suggestion.display_name
-        locationQuery.value = suggestion.display_name
-        locationSuggestions.value = []
-    }
-
-    // Keep input in sync with newProduct
-    watch(() => props.newProduct.product_location, (val) => {
-        if (val !== locationQuery.value) locationQuery.value = val || ''
-    })
-
-    // In ProductAddModal.vue
-    watch(() => props.showAddProductModal, (val) => {
-    if (!val) {
-        productImagesPreview.value = [];
-    }
+function handleProductImages(files) {
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // Add new files to existing ones
+    productImages.value = [...productImages.value, ...imageFiles];
+    
+    // Create previews for new files
+    imageFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            productImagesPreview.value.push(e.target.result);
+        };
+        reader.readAsDataURL(file);
     });
+    
+    // Emit updated files to parent
+    emit('update:productImages', productImages.value);
+}
 
-    function formatDate(dateStr) {
-        if (!dateStr) return 'N/A';
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr; // fallback if invalid
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+function removeImage(index) {
+    productImages.value.splice(index, 1);
+    productImagesPreview.value.splice(index, 1);
+    emit('update:productImages', productImages.value);
+}
+
+// Form submission
+function onAdd() {
+    // Validation
+    if (!props.newProduct.product_name || !props.newProduct.sub_category_id || 
+        !props.newProduct.product_price || !props.newProduct.quantity || 
+        !props.newProduct.seller_id) {
+        alert('Please fill all required fields.');
+        return;
     }
 
-    // Add this near your other refs
-    const productImages = ref([]) // Array of File objects
-    const productImagesPreview = ref([]) // Array of preview URLs
+    // Emit the add product event with files
+    emit('add-product', productImages.value);
+}
 
-    function onProductImagesChange(e) {
-        const files = Array.from(e.target.files);
-        // Add new files to the existing ones, avoiding duplicates by name+size
-        const existing = productImages.value.map(f => f.name + f.size);
-        files.forEach(file => {
-            if (!existing.includes(file.name + file.size)) {
-            productImages.value.push(file);
-            const reader = new FileReader();
-            reader.onload = ev => productImagesPreview.value.push(ev.target.result);
-            reader.readAsDataURL(file);
-            }
-        });
-        // Reset input value so the same file can be selected again if needed
-        e.target.value = '';
-    }
+function closeAddProductModal() {
+    // Reset form data
+    productImages.value = [];
+    productImagesPreview.value = [];
+    locationQuery.value = '';
+    locationSuggestions.value = [];
+    
+    emit('close-add-product-modal');
+}
 
-    function removeImage(idx) {
-        productImages.value.splice(idx, 1);
-        productImagesPreview.value.splice(idx, 1);
+// Watch for modal close to reset data
+watch(() => props.showAddProductModal, (newVal) => {
+    if (!newVal) {
+        productImages.value = [];
+        productImagesPreview.value = [];
+        locationQuery.value = '';
+        locationSuggestions.value = [];
     }
-
-    function onProductImagesDrop(e) {
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        const existing = productImages.value.map(f => f.name + f.size);
-        files.forEach(file => {
-            if (!existing.includes(file.name + file.size)) {
-            productImages.value.push(file);
-            const reader = new FileReader();
-            reader.onload = ev => productImagesPreview.value.push(ev.target.result);
-            reader.readAsDataURL(file);
-            }
-        });
-    }
+});
 </script>
 
 <template>
@@ -135,10 +133,10 @@
             <button class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl"
                 @click="closeAddProductModal">&times;</button>
             <h2 class="text-2xl font-semibold mb-6">Add Product</h2>
-            <form class="space-y-4">
+            <form class="space-y-4" @submit.prevent="onAdd">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block mb-1 font-medium">Seller Name</label>
+                        <label class="block mb-1 font-medium">Seller Name *</label>
                         <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             v-model="newProduct.seller_id" required>
                             <option disabled value="">Select seller</option>
@@ -148,36 +146,43 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Product Name</label>
+                        <label class="block mb-1 font-medium">Product Name *</label>
                         <input type="text"
                             class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            placeholder="Type product name" v-model="newProduct.product_name" />
+                            placeholder="Type product name" v-model="newProduct.product_name" required />
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Sub-Category</label>
+                        <label class="block mb-1 font-medium">Category *</label>
                         <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            v-model="newProduct.sub_category_id">
+                            v-model="newProduct.category_id" required>
+                            <option disabled value="">Select category</option>
+                            <option v-for="category in categories" :key="category.category_id" :value="category.category_id">
+                                {{ category.category_name }}
+                            </option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-medium">Sub-Category *</label>
+                        <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                            v-model="newProduct.sub_category_id" :disabled="!newProduct.category_id" required>
                             <option disabled value="">Select sub-category</option>
-                            <option v-for="sub in subcategories" :key="sub.sub_category_id"
+                            <option v-for="sub in filteredSubcategories" :key="sub.sub_category_id"
                                 :value="sub.sub_category_id">
                                 {{ sub.sub_category_name }}
                             </option>
                         </select>
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Price</label>
-                        <input type="number"
-                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            placeholder="₱0.00" v-model="newProduct.product_price" />
+                        <label class="block mb-1 font-medium">Price *</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₱</span>
+                            <input type="number"
+                                class="w-full pl-8 px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
+                                placeholder="0.00" v-model="newProduct.product_price" min="0.01" step="0.01" required />
+                        </div>
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Discounted Price</label>
-                        <input type="number"
-                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            placeholder="₱0.00" v-model="newProduct.product_discountedPrice" />
-                    </div>
-                    <div>
-                        <label class="block mb-1 font-medium">Product Status</label>
+                        <label class="block mb-1 font-medium">Product Status *</label>
                         <select class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
                             v-model="newProduct.product_status" required>
                             <option disabled value="">Select status</option>
@@ -209,10 +214,10 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block mb-1 font-medium">Quantity</label>
+                        <label class="block mb-1 font-medium">Quantity *</label>
                         <input type="number"
                             class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none"
-                            placeholder="0" v-model="newProduct.quantity" />
+                            placeholder="0" v-model="newProduct.quantity" min="0" required />
                     </div>
                     <div>
                         <label class="block mb-1 font-medium">Posted Date & Time</label>
@@ -290,9 +295,10 @@
                     </div>
                 </div>
                 <div class="flex justify-end space-x-2 mt-6">
-                    <button type="button" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                        @click="onAdd">Add
-                        product</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                        :disabled="!newProduct.product_name || !newProduct.sub_category_id || !newProduct.product_price || !newProduct.quantity || !newProduct.seller_id">
+                        Add Product
+                    </button>
                     <button type="button" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded"
                         @click="closeAddProductModal">Cancel</button>
                 </div>
