@@ -1,7 +1,7 @@
 <template>
 <!-- Footer -->
   <footer
-      class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
+      class="mt-auto border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800">
       <div class="flex items-center space-x-4">
           <span>© 2025 FreshBytes. All rights reserved.</span>
           <a href="#" class="hover:underline">Privacy Policy</a>

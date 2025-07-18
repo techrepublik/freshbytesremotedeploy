@@ -48,7 +48,7 @@ const formatDate = (dateStr) => {
 </script>
 
 <template>
-  <div v-if="show && product" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+  <div v-if="show && product" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
     <div class="bg-white rounded-xl shadow-lg w-full max-w-3xl p-6 relative max-h-screen overflow-y-auto">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">

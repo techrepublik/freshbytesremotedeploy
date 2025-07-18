@@ -1,5 +1,6 @@
 <script setup>
 import ProductHeader from '~/components/products/ProductHeader.vue'
+import ProductCards from '~/components/products/ProductCards.vue'
 
 definePageMeta({
   layout: "home",
@@ -16,6 +17,11 @@ const analytics = ref({
   topCategories: [],
   salesTrends: []
 })
+
+// Pagination states
+const fastMovingPage = ref(1)
+const slowMovingPage = ref(1)
+const pageSize = 10
 
 // Get auth headers
 const getAuthHeaders = () => {
@@ -49,7 +55,7 @@ const calculateAnalytics = () => {
   if (!products.value.length) return
 
   // Fast moving products (high sales per day ratio)
-  analytics.value.fastMoving = products.value
+  const fastMovingData = products.value
     .filter(p => p.sell_count > 0 && p.created_at)
     .map(product => {
       const createdDate = new Date(product.created_at)
@@ -63,10 +69,11 @@ const calculateAnalytics = () => {
       }
     })
     .sort((a, b) => b.velocity - a.velocity)
-    .slice(0, 10)
+
+  analytics.value.fastMoving = fastMovingData
 
   // Slow moving products
-  analytics.value.slowMoving = products.value
+  const slowMovingData = products.value
     .filter(p => p.created_at)
     .map(product => {
       const createdDate = new Date(product.created_at)
@@ -81,7 +88,8 @@ const calculateAnalytics = () => {
     })
     .filter(p => p.daysSinceCreated > 30) // Only products older than 30 days
     .sort((a, b) => a.salesPerDay - b.salesPerDay)
-    .slice(0, 10)
+
+  analytics.value.slowMoving = slowMovingData
 
   // Top categories by sales
   const categoryStats = {}
@@ -104,6 +112,29 @@ const calculateAnalytics = () => {
   analytics.value.topCategories = Object.values(categoryStats)
     .sort((a, b) => b.totalSales - a.totalSales)
     .slice(0, 5)
+}
+
+// Computed properties for pagination
+const paginatedFastMoving = computed(() => {
+  const start = (fastMovingPage.value - 1) * pageSize
+  return analytics.value.fastMoving.slice(start, start + pageSize)
+})
+
+const paginatedSlowMoving = computed(() => {
+  const start = (slowMovingPage.value - 1) * pageSize
+  return analytics.value.slowMoving.slice(start, start + pageSize)
+})
+
+const fastMovingTotalPages = computed(() => Math.ceil(analytics.value.fastMoving.length / pageSize))
+const slowMovingTotalPages = computed(() => Math.ceil(analytics.value.slowMoving.length / pageSize))
+
+// Pagination handlers
+const handleFastMovingPageChange = (page) => {
+  fastMovingPage.value = page
+}
+
+const handleSlowMovingPageChange = (page) => {
+  slowMovingPage.value = page
 }
 
 // Format currency
@@ -177,7 +208,7 @@ onMounted(() => {
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                    <tr v-for="product in analytics.fastMoving" :key="product.product_id" class="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
+                    <tr v-for="product in paginatedFastMoving" :key="product.product_id" class="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
                       <td class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
                         <div class="flex items-center">
                           <img 
@@ -219,6 +250,17 @@ onMounted(() => {
                 <div v-if="analytics.fastMoving.length === 0" class="text-center py-8">
                   <p class="text-gray-500 dark:text-gray-400">No fast moving products data available</p>
                 </div>
+              </div>
+
+              <!-- Fast Moving Pagination -->
+              <div v-if="fastMovingTotalPages > 1" class="p-4 border-t border-gray-200 dark:border-gray-700">
+                <Pagination
+                  :current-page="fastMovingPage"
+                  :total-pages="fastMovingTotalPages"
+                  :total="analytics.fastMoving.length"
+                  :page-size="pageSize"
+                  @page-changed="handleFastMovingPageChange"
+                />
               </div>
             </div>
 
@@ -287,7 +329,7 @@ onMounted(() => {
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                    <tr v-for="product in analytics.slowMoving" :key="product.product_id" class="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
+                    <tr v-for="product in paginatedSlowMoving" :key="product.product_id" class="hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
                       <td class="p-4 text-base font-medium text-gray-900 whitespace-nowrap dark:text-white">
                         <div class="flex items-center">
                           <img 
@@ -326,6 +368,17 @@ onMounted(() => {
                 <div v-if="analytics.slowMoving.length === 0" class="text-center py-8">
                   <p class="text-gray-500 dark:text-gray-400">No slow moving products data available</p>
                 </div>
+              </div>
+
+              <!-- Slow Moving Pagination -->
+              <div v-if="slowMovingTotalPages > 1" class="p-4 border-t border-gray-200 dark:border-gray-700">
+                <Pagination
+                  :current-page="slowMovingPage"
+                  :total-pages="slowMovingTotalPages"
+                  :total="analytics.slowMoving.length"
+                  :page-size="pageSize"
+                  @page-changed="handleSlowMovingPageChange"
+                />
               </div>
             </div>
           </div>

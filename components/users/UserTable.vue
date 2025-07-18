@@ -170,12 +170,26 @@ const toggleAllUsers = () => {
 const toggleUserSelection = (user) => {
   emit('toggle-user-selected', user)
 }
+
+// Helper function to format dates
+function formatDate(dateString) {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
+}
 </script>
 
 <template>
 <!-- User Table -->
   <div class="bg-white rounded-lg">
-    <table class="min-w-full divide-y divide-gray-200">
+    <table v-if="paginatedUsers.length > 0" class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-50">
         <tr>
           <th scope="col" class="p-4">
@@ -195,6 +209,7 @@ const toggleUserSelection = (user) => {
           <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">User Email</th>
           <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
           <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+          <th scope="col" class="p-4 text-left text-xs font-medium text-gray-500 uppercase">Joined Date</th>
           <th scope="col" class="p-4 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
         </tr>
       </thead>
@@ -250,6 +265,7 @@ const toggleUserSelection = (user) => {
               </label>
             </div>
           </td>
+          <td class="px-4 py-3 font-semibold">{{ formatDate(user.created_at) }}</td>
           <td class="p-4 space-x-2 whitespace-nowrap" @click.stop>
             <div class="flex justify-center items-center">
               <!-- Dropdown container -->
@@ -328,5 +344,27 @@ const toggleUserSelection = (user) => {
         </tr>
       </tbody>
     </table>
+    <!-- No users found message -->
+    <div v-else class="flex flex-col items-center justify-center py-16 px-6">
+      <!-- Icon -->
+      <div class="flex items-center justify-center w-16 h-16 mb-6 bg-gray-100 rounded-full">
+        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+        </svg>
+      </div>
+      
+      <!-- Main Message -->
+      <h3 class="text-xl font-semibold text-gray-900 mb-2">No users found</h3>
+      
+      <!-- Description -->
+      <p class="text-gray-500 text-center mb-6 max-w-sm">
+        <span v-if="isDeletedView">
+          No deleted users found.
+        </span>
+        <span v-else>
+          No users match your current search and filter criteria.
+        </span>
+      </p>
+    </div>
   </div>
 </template>

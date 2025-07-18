@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Main Sidebar (if you have one) -->
+    <!-- Main Sidebar -->
     <Sidebar />
     
     <!-- Main Content Area -->

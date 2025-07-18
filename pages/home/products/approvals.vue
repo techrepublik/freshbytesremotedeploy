@@ -1,5 +1,8 @@
 <script setup>
 import ProductHeader from '~/components/products/ProductHeader.vue'
+import ProductCards from '~/components/products/ProductCards.vue'
+import ProductApprovalModal from '~/components/products/ProductApprovalModal.vue'
+
 
 definePageMeta({
   layout: "home",
@@ -406,5 +409,16 @@ onMounted(() => {
       @approve="approveProduct"
       @reject="rejectProduct"
     />
+
+    <!-- Pagination -->
+    <div v-if="filteredProducts.length > 0" class="p-4 border-t border-gray-200 dark:border-gray-700">
+      <Pagination
+        :current-page="1"
+        :total-pages="Math.ceil(filteredProducts.length / 10)"
+        :total="filteredProducts.length"
+        :page-size="10"
+        @page-changed="handlePageChange"
+      />
+    </div>
   </div>
 </template>

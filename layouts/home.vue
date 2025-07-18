@@ -12,6 +12,7 @@ onMounted(() => {
 </script>
 
 <template>
+<div class="min-h-screen flex flex-col">
     <nav class="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
         <div class="px-3 py-3 lg:px-5 lg:pl-3">
             <div class="flex items-center justify-between">
@@ -195,6 +196,16 @@ onMounted(() => {
                             <span class="ms-3">Analytics</span>
                         </NuxtLink>
                         </li>
+                        <li>
+                        <NuxtLink to="/home/products/deleted" 
+                                class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">
+                        <svg class="flex-shrink-0 w-4 h-4 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white" 
+                            fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="ms-3">Deleted Products</span>
+                        </NuxtLink>
+                        </li>
                     </ul>
                 </li>
 
@@ -256,7 +267,12 @@ onMounted(() => {
         </div>
     </aside>
 
-    <div class="p-4 mt-14 sm:ml-64">
+    <!-- Main content wrapper -->
+    <main class="flex-1 p-4 mt-14 sm:ml-64">
         <slot />
-    </div>
+    </main>
+
+    <!-- Footer -->
+    <Footer />
+</div>
 </template>

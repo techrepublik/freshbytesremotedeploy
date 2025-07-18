@@ -26,7 +26,8 @@ const props = defineProps({
 const emit = defineEmits(['add-product'])
 
 // Get current route to determine breadcrumb
-const route = useRoute()
+const route = useRoute();
+const isDeletedPage = computed(() => route.path.includes('/deleted'));
 
 // Generate breadcrumb items based on current route
 const computedBreadcrumbItems = computed(() => {
@@ -59,6 +60,12 @@ const computedBreadcrumbItems = computed(() => {
     items.push({
       name: 'Analytics',
       href: '/home/products/analytics',
+      current: true
+    })
+  } else if (path.includes('/deleted')) {
+    items.push({
+      name: 'Deleted',
+      href: '/home/products/deleted',
       current: true
     })
   } else if (path === '/home/products') {
@@ -176,6 +183,21 @@ const computedBreadcrumbItems = computed(() => {
             <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
           </svg>
           Analytics
+        </NuxtLink>
+
+        <NuxtLink
+          to="/home/products/deleted"
+          :class="[
+            route.path === '/home/products/deleted'
+              ? 'border-green-500 text-green-600 dark:text-green-400 dark:border-green-400'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300',
+            'whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200'
+          ]">
+          <svg class="w-4 h-4 mr-2" 
+              fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          Deleted
         </NuxtLink>
       </nav>
     </div>
