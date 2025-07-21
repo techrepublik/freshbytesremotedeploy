@@ -1,6 +1,6 @@
 <template>
     <div class="h-screen flex flex-col space-y-8 items-center justify-center">
-        <h1 class="font-bold text-lg">Welcome to FreshBytes Admin</h1>
+        <h1 class="font-bold text-lg">FreshBytes Admin</h1>
         
         <!-- Error display -->
         <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -8,6 +8,7 @@
         </div>
         
         <div class="bg-gray-100 p-8 rounded-2xl">
+            <h1>Welcome Back</h1>
             <FormAuth @child-action="handleLogin" :form="form" :isLoading="isLoading"/>
         </div>
         
