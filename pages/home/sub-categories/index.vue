@@ -1,6 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useClickOutside } from '@/composables/useClickOutside'
+import { ref, computed } from 'vue'
 definePageMeta({
     layout: "home",
 })
@@ -27,42 +26,25 @@ onMounted(async () => {
 })
 
 const { data: categories, pending: pendingCategories, refresh: refreshCategories } = await useFetch(
-    `${api}/api/categories/`,
-    {
-        server: false,
-        headers: computed(() => getAuthHeaders()),
-        onResponseError({ response }) {
-            console.error('Categories API Error:', response.status, response._data);
-        }
+  `${api}/api/categories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Categories API Error:', response.status, response._data);
     }
+  }
 );
 
-const openDropdown = ref(null); // for controlling which dropdown is open
-
-const dropdownRefs = ref([])
-
-function toggleDropdown(index) {
-    openDropdown.value = openDropdown.value === index ? null : index;
-}
-
-function handleClickOutside(event) {
-  if (!dropdownRefs.value.some(el => el && el.contains(event.target))) {
-    openDropdown.value = null
-  }
-}
-
-
-
-
 const { data: subcategories, pending: pendingSubcategories, refresh: refreshSubcategories } = await useFetch(
-    `${api}/api/subcategories/`,
-    {
-        server: false,
-        headers: computed(() => getAuthHeaders()),
-        onResponseError({ response }) {
-            console.error('Subcategories API Error:', response.status, response._data);
-        }
+  `${api}/api/subcategories/`,
+  {
+    server: false,
+    headers: computed(() => getAuthHeaders()),
+    onResponseError({ response }) {
+      console.error('Subcategories API Error:', response.status, response._data);
     }
+  }
 );
 
 const loading = computed(() => pendingProducts.value || pendingCategories.value || pendingSubcategories.value);
@@ -75,7 +57,6 @@ const newSubCategory = ref({
     updated_at: null,
     category_id: ""
 });
-
 
 
 // Reactive variables
@@ -268,6 +249,7 @@ async function deleteSelectedCategories() {
         console.error('API error:', error.data || error);
     }
 }
+
 </script>
 
 <template>
@@ -467,8 +449,8 @@ async function deleteSelectedCategories() {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
-                                <tr v-for="(subcategory, index) in filteredSubcategories"
-                                    :key="subcategory.sub_category_id" class="hover:bg-gray-100 dark:hover:bg-gray-700"
+                                <tr v-for="subcategory in filteredSubcategories" :key="subcategory.sub_category_id"
+                                    class="hover:bg-gray-100 dark:hover:bg-gray-700"
                                     @click="showCategoryModal(subcategory)">
 
                                     <td class="w-4 p-4">
@@ -508,118 +490,96 @@ async function deleteSelectedCategories() {
                                     </td>
 
 
-                                    <td class="relative h-[64px]">
-                                        <div class="flex items-center justify-center h-full">
-                                            <button @click="toggleDropdown(index)"
-                                                class="p-2 hover:bg-gray-200 rounded-full" @click.stop>
-                                                <svg class="w-5 h-5 text-gray-600" fill="currentColor"
-                                                    viewBox="0 0 20 20">
+                                    <td class="p-4 space-x-2 whitespace-nowrap">
+                                        <div class="flex justify-center space-x-2">
+                                            <button type="button" @click.stop="openUpdateModal(subcategory)"
+                                                class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-[#29000] rounded-lg bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                                     <path
-                                                        d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                        d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z">
+                                                    </path>
+                                                    <path fill-rule="evenodd"
+                                                        d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
+                                                        clip-rule="evenodd"></path>
                                                 </svg>
+                                                Update
                                             </button>
+                                            <div id="showCategory" v-if="isSubCategoryVisible"
+                                                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
 
-                                            <!-- Dropdown Menu -->
-                                            <div v-if="openDropdown === index" ref="dropdownRef"
-                                                class="absolute right-0 z-50 mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-700 dark:border-gray-600">
-                                                <button @click.stop="openUpdateModal(subcategory)"
-                                                    class="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600">
-                                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path
-                                                            d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z">
-                                                        </path>
-                                                        <path fill-rule="evenodd"
-                                                            d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"
-                                                            clip-rule="evenodd"></path>
-                                                    </svg>
-                                                    Update
-                                                </button>
-                                                <button @click.stop="openDeleteModal(subcategory)"
-                                                    class="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-gray-600">
-                                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd"
-                                                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                                            clip-rule="evenodd" />
-                                                    </svg>
-                                                    Delete
-                                                </button>
-                                            
-
-
-                                                <div id="showCategory" v-if="isSubCategoryVisible"
-                                                    class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-
-                                                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto"
-                                                        @click.stop>
-                                                        <div class="flex flex-col gap-1 mb-4">
-                                                            <h2
-                                                                class="text-2xl font-bold text-gray-900 dark:text-white">
-                                                                {{
-                                                                    selectedSubCategory?.sub_category_name }}</h2>
-                                                        </div>
-
-
-                                                        <div class="flex gap-4 mb-4">
-                                                            <div
-                                                                class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
-                                                                <img src="\assets\images\logos-12-12.png" alt="Product"
-                                                                    class="object-contain h-20" />
-                                                            </div>
-                                                        </div>
-
-                                                        <form class="space-y-4">
-                                                            <div class="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <label class="block mb-1 font-medium">Sub-Category
-                                                                        Name</label>
-                                                                    <div
-                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                                                        {{ selectedSubCategory?.sub_category_name }}
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-span-2">
-                                                                    <label
-                                                                        class="block mt-2 mb-1 font-medium">Description</label>
-                                                                    <textarea rows="3" disabled
-                                                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedSubCategory?.sub_category_description }}</textarea>
-                                                                </div>
-                                                                <div class="col-span-2">
-                                                                    <h2
-                                                                        class="text-base font-semibold mb-2 text-gray-900 dark:text-white">
-                                                                        Dates</h2>
-                                                                    <div class="grid grid-cols-2 gap-4">
-                                                                        <div>
-                                                                            <label
-                                                                                class="block mb-1 font-medium">Created
-                                                                                at</label>
-                                                                            <textarea rows="3" disabled
-                                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.created_at) }}</textarea>
-                                                                        </div>
-                                                                        <div>
-                                                                            <label
-                                                                                class="block mb-1 font-medium">Updated
-                                                                                at</label>
-                                                                            <textarea rows="3" disabled
-                                                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.updated_at) }}</textarea>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="flex justify-end space-x-2 mt-6">
-                                                                <button type="button"
-                                                                    @click="isSubCategoryVisible = false; selectedSubCategory = null"
-                                                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                                                    Cancel
-                                                                </button>
-                                                            </div>
-                                                        </form>
+                                                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto"
+                                                    @click.stop>
+                                                    <div class="flex flex-col gap-1 mb-4">
+                                                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">{{
+                                                            selectedSubCategory?.sub_category_name }}</h2>
                                                     </div>
+
+
+                                                    <div class="flex gap-4 mb-4">
+                                                        <div
+                                                            class="w-28 h-24 bg-gray-100 rounded flex items-center justify-center">
+                                                            <img src="\assets\images\logos-12-12.png" alt="Product"
+                                                                class="object-contain h-20" />
+                                                        </div>
+                                                    </div>
+
+                                                    <form class="space-y-4">
+                                                        <div class="grid grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label class="block mb-1 font-medium">Sub-Category
+                                                                    Name</label>
+                                                                <div
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
+                                                                    {{ selectedSubCategory?.sub_category_name }}
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-span-2">
+                                                                <label
+                                                                    class="block mt-2 mb-1 font-medium">Description</label>
+                                                                <textarea rows="3" disabled
+                                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedSubCategory?.sub_category_description }}</textarea>
+                                                            </div>
+                                                            <div class="col-span-2">
+                                                                <h2
+                                                                    class="text-base font-semibold mb-2 text-gray-900 dark:text-white">
+                                                                    Dates</h2>
+                                                                <div class="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <label class="block mb-1 font-medium">Created
+                                                                            at</label>
+                                                                        <textarea rows="3" disabled
+                                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.created_at) }}</textarea>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label class="block mb-1 font-medium">Updated
+                                                                            at</label>
+                                                                        <textarea rows="3" disabled
+                                                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ formatDate(selectedSubCategory?.updated_at) }}</textarea>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="flex justify-end space-x-2 mt-6">
+                                                            <button type="button"
+                                                                @click="isSubCategoryVisible = false; selectedSubCategory = null"
+                                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
-
-
                                             </div>
-                                            </div>
-                                        
+
+                                            <button type="button" @click.stop="openDeleteModal(subcategory)"
+                                                class="inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-red-700 rounded-lg hover:bg-red-800 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900">
+                                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                Delete sub-category
+                                            </button>
+                                        </div>
                                     </td>
 
                                 </tr>
@@ -746,5 +706,4 @@ async function deleteSelectedCategories() {
             </div>
         </div>
     </div>
-</template>                       
-  
+</template>

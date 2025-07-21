@@ -14,6 +14,7 @@ const accessToken = ref('');
 import CategoryAddModal from '@/components/categories/CategoryAddModal.vue'
 import CategoryShowModal from '@/components/categories/CategoryShowModal.vue'
 import CategoryDeleteModal from '@/components/categories/CategoryDeleteModal.vue'
+import CategoryUpdateModal from '@/components/categories/CategoryUpdateModal.vue'
 
 const getAuthHeaders = () => {
     const accessTokenCookie = useCookie('auth-access-token')
@@ -88,8 +89,14 @@ const filteredCategories = computed(() => {
 const isCategoryVisible = ref(false);
 const selectedCategory = ref(null);
 const statusFilter = ref('');
+
 const isUpdateVisible = ref(false);
 const categoryToUpdate = ref(null);
+
+function closeUpdateModal() {
+  isUpdateVisible.value = false;
+  categoryToUpdate.value = null;
+}
 
 const isDeleteVisible = ref(false);
 const categoryToDelete = ref(null);
@@ -102,6 +109,8 @@ function handleModalClose() {
   isDeleteVisible.value = false
   selectedCategory.value = null
 }
+
+
 
 const selectedCategoryIds = ref([]);
 const isAddVisible = ref(false);

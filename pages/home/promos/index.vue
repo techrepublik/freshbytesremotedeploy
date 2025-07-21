@@ -40,12 +40,12 @@ const { data: promos, pending: pendingPromos, refresh: refreshPromos } = await u
 );
 
 const { data: sellers, pending: pendingSellers, refresh: refreshSellers } = await useFetch(
-    `${api}/api/products/`,
+    `${api}/api/sellers/`,
     {
         server: false,
         headers: computed(() => getAuthHeaders()),
         onResponseError({ response }) {
-            console.error('Products API Error:', response.status, response._data);
+            console.error('Sellers API Error:', response.status, response._data);
             if (response.status === 401) {
                 navigateTo('/login');
             }
@@ -75,48 +75,6 @@ const sellersArray = computed(() => {
 });
 const loading = computed(() => pendingPromos.value || pendingSellers.value || pendingProducts.value);
 
-// promos.value = [
-//     {
-//         promo_id: "pid00125",
-//         promo_name: "Firsy Promo",
-//         promo_description: "less 40%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-2334',
-//         promo_end_date: '2025-4454',
-//         is_active: false,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-//     {
-//         promo_id: "pid00df5",
-//         promo_name: "WOW PROMO",
-//         promo_description: "less 20%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-2334',
-//         promo_end_date: '2025-445e4',
-//         is_active: false,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-
-//     {
-//         promo_id: "pid001345",
-//         promo_name: "Last Promo",
-//         promo_description: "less 60%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-234',
-//         promo_end_date: '2025-4414',
-//         is_active: true,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-// ];
 
 const newPromo = ref({
     promo_name: "",
@@ -134,160 +92,184 @@ const newPromo = ref({
 });
 
 async function addPromo() {
-    // Validation
-    if (!newPromo.value.promo_name ||
-        !newPromo.value.seller_id ||
-        !newPromo.value.product_id.length ||
-        !newPromo.value.discount_type
-    ) {
-        alert('Please fill in all required fields.');
-        return;
-    }
+  try {
+    const formData = new FormData()
 
-    if (!Array.isArray(newPromo.value.product_id)) {
-        newPromo.value.product_id = [String(newPromo.value.product_id)];
+    formData.append('promo_name', newPromo.value.promo_name || '')
+    formData.append('promo_description', newPromo.value.promo_description || '')
+    formData.append('discount_type', newPromo.value.discount_type || '')
+    formData.append('discount_amount', newPromo.value.discount_amount || '')
+    formData.append('discount_percentage', newPromo.value.discount_percentage || '')
+    formData.append('promo_start_date', newPromo.value.promo_start_date || '')
+    formData.append('promo_end_date', newPromo.value.promo_end_date || '')
+    formData.append('is_active', newPromo.value.is_active || '')
+
+    // Convert seller_id to integer if possible
+    const sellerIdInt = parseInt(newPromo.value.seller_id)
+    if (!isNaN(sellerIdInt)) {
+      formData.append('seller_id', sellerIdInt)
     } else {
-        newPromo.value.product_id = newPromo.value.product_id.map(String);
+      formData.append('seller_id', '')
     }
 
-    console.log('Submitting promo:', JSON.stringify(newPromo.value, null, 2));
+    // Support both single and multiple product IDs, convert to integers
+    const productIds = Array.isArray(newPromo.value.product_id)
+      ? newPromo.value.product_id
+      : [newPromo.value.product_id]
 
-    try {
-        await $fetch(`${api}api/promos/`, {
-            method: 'POST',
-            body: newPromo.value,
-        });
-        alert("Data added successfully");
-        closeAddPromoModal();
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to add promo.');
-        console.error('API error:', error);
-        if (error?.data) console.error('API error data:', error.data);
+    productIds.forEach(id => {
+      const idInt = parseInt(id)
+      if (!isNaN(idInt)) formData.append('product_id', idInt)
+    })
+
+    // Debug output
+    console.log("Submitting promo:")
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`)
     }
+
+    await $fetch(`${api}/api/promos/`, {
+      method: 'POST',
+      body: formData,
+      headers: getAuthHeaders(),
+    })
+
+    alert("Promo added successfully")
+    closeAddPromoModal()
+    await refreshPromos()
+
+    // Reset form
+    Object.keys(newPromo.value).forEach(key => newPromo.value[key] = null)
+  } catch (error) {
+    alert('Failed to add promo.')
+    console.error('API error:', error)
+    if (error?.data) console.error('Error data:', error.data)
+  }
 }
+
+
 async function deletePromo() {
-    console.log('Deleting:', promoToDelete.value);
-    if (!promoToDelete.value || !promoToDelete.value.promo_id) {
-        alert('No promo selected for deletion.');
-        return;
-    }
-    try {
-        await $fetch(`${api}api/promos/${promoToDelete.value.promo_id}/`, {
-            method: 'DELETE',
-        });
-        alert('Promo deleted successfully.');
-        isDeleteVisible.value = false;
-        promoToDelete.value = null;
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to delete promo.');
-        console.error('API error:', error.data || error);
-    }
-}
-async function updatePromo() {
-    if (!promoToUpdate.value || !promoToUpdate.value.promo_id) {
-        alert('No category selected for update.');
-        return;
-    }
-    try {
-        await $fetch(`${api}api/promos/${promoToUpdate.value.promo_id}/`, {
-            method: 'PATCH', // or 'PATCH' if your API supports partial updates
-            body: promoToUpdate.value,
-        });
-        alert('Promo updated successfully.');
-        isUpdateVisible.value = false;
-        promoToUpdate.value = null;
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to update category.');
-        console.error('API error:', error.data || error);
-    }
-}
-function closeAddPromoModal() {
-    resetNewPromo();
-    document.getElementById('addPromo')?.classList.add('hidden');
-}
-function resetNewPromo() {
-    newPromo.value = {
-        promo_name: "",
-        promo_description: "",
-        discount_type: "",
-        discount_amount: "",
-        discount_percentage: "",
-        promo_start_date: null,
-        promo_end_date: null,
-        is_active: "",
-        seller_id: "",
-        product_id: [],
-        created_at: null,
-        updated_at: null,
-    };
-}
-//Date
-function formatDate(dateStr) {
-    if (!dateStr) return 'N/A';
-    const date = new Date(dateStr);
-    if (isNaN(date)) return dateStr;
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-const filteredPromos = computed(() => {
-    let list = promos.value || [];
-    if (searchQuery.value) {
-        list = list.filter(p =>
-            p.promo_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-            p.promo_description?.toLowerCase().includes(searchQuery.value.toLowerCase())
-        );
-    }
-    if (statusFilter.value) {
-        list = list.filter(p =>
-            statusFilter.value === 'Active' ? p.is_active : !p.is_active
-        );
-    }
-    if (discountTypeFilter.value) {
-        list = list.filter(p =>
-            p.discount_type === discountTypeFilter.value
-        );
-    }
-    return list;
-});
-
-function toggleSelectAll(event) {
-    if (event.target.checked) {
-        selectedPromoIds.value = promos.value.map(p => p.promo_id);
-    } else {
-        selectedPromoIds.value = [];
-    }
-}
-async function deleteSelectedPromos() {
-    if (selectedPromoIds.value.length === 0) {
-        alert('No promos selected.');
-        return;
-    }
-    if (!confirm(`Are you sure you want to delete ${selectedPromoIds.value.length} categor${selectedPromoIds.value.length === 1 ? 'y' : 'ies'}? This action cannot be undone.`)) {
-        return;
-    }
-    try {
-        for (const id of selectedPromoIds.value) {
-            await $fetch(`${api}api/promos/${id}/`, {
+        console.log('Deleting:', promoToDelete.value);
+        if (!promoToDelete.value || !promoToDelete.value.promo_id) {
+            alert('No promo selected for deletion.');
+            return;
+        }
+        try {
+            await $fetch(`${api}api/promos/${promoToDelete.value.promo_id}/`, {
                 method: 'DELETE',
             });
+            alert('Promo deleted successfully.');
+            isDeleteVisible.value = false;
+            promoToDelete.value = null;
+            await refreshNuxtData();
+        } catch (error) {
+            alert('Failed to delete promo.');
+            console.error('API error:', error.data || error);
         }
-        alert('Selected promos deleted successfully.');
-        selectedPromoIds.value = [];
-        await refreshNuxtData();
-    } catch (error) {
-        alert('Failed to delete selected promos.');
-        console.error('API error:', error.data || error);
     }
-}
+    async function updatePromo() {
+        if (!promoToUpdate.value || !promoToUpdate.value.promo_id) {
+            alert('No category selected for update.');
+            return;
+        }
+        try {
+            await $fetch(`${api}api/promos/${promoToUpdate.value.promo_id}/`, {
+                method: 'PATCH', // or 'PATCH' if your API supports partial updates
+                body: promoToUpdate.value,
+            });
+            alert('Promo updated successfully.');
+            isUpdateVisible.value = false;
+            promoToUpdate.value = null;
+            await refreshNuxtData();
+        } catch (error) {
+            alert('Failed to update category.');
+            console.error('API error:', error.data || error);
+        }
+    }
+    function closeAddPromoModal() {
+        resetNewPromo();
+        document.getElementById('addPromo')?.classList.add('hidden');
+    }
+    function resetNewPromo() {
+        newPromo.value = {
+            promo_name: "",
+            promo_description: "",
+            discount_type: "",
+            discount_amount: "",
+            discount_percentage: "",
+            promo_start_date: null,
+            promo_end_date: null,
+            is_active: "",
+            seller_id: "",
+            product_id: [],
+            created_at: null,
+            updated_at: null,
+        };
+    }
+    //Date
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    const filteredPromos = computed(() => {
+        let list = promos.value || [];
+        if (searchQuery.value) {
+            list = list.filter(p =>
+                p.promo_name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                p.promo_description?.toLowerCase().includes(searchQuery.value.toLowerCase())
+            );
+        }
+        if (statusFilter.value) {
+            list = list.filter(p =>
+                statusFilter.value === 'Active' ? p.is_active : !p.is_active
+            );
+        }
+        if (discountTypeFilter.value) {
+            list = list.filter(p =>
+                p.discount_type === discountTypeFilter.value
+            );
+        }
+        return list;
+    });
+
+    function toggleSelectAll(event) {
+        if (event.target.checked) {
+            selectedPromoIds.value = promos.value.map(p => p.promo_id);
+        } else {
+            selectedPromoIds.value = [];
+        }
+    }
+    async function deleteSelectedPromos() {
+        if (selectedPromoIds.value.length === 0) {
+            alert('No promos selected.');
+            return;
+        }
+        if (!confirm(`Are you sure you want to delete ${selectedPromoIds.value.length} categor${selectedPromoIds.value.length === 1 ? 'y' : 'ies'}? This action cannot be undone.`)) {
+            return;
+        }
+        try {
+            for (const id of selectedPromoIds.value) {
+                await $fetch(`${api}api/promos/${id}/`, {
+                    method: 'DELETE',
+                });
+            }
+            alert('Selected promos deleted successfully.');
+            selectedPromoIds.value = [];
+            await refreshNuxtData();
+        } catch (error) {
+            alert('Failed to delete selected promos.');
+            console.error('API error:', error.data || error);
+        }
+    }
 
 </script>
 <template>
