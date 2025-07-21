@@ -17,6 +17,15 @@ const isDeleteVisible = ref(false);
 const isUpdateVisible = ref(false);
 const transactionToUpdate = ref({});
 const isReportVisible = ref(false);
+const activeDropdown = ref(null);
+
+function toggleDropdown(id) {
+    activeDropdown.value = activeDropdown.value === id ? null : id;
+}
+
+function closeDropdown() {
+    activeDropdown.value = null;
+}
 
 const transactions = ref([
     {
@@ -199,6 +208,7 @@ function toggleSelectAll(event) {
                 <option value="Refunded">Refunded</option>
                 <option value="Failed">Failed</option>
             </select>
+            
             <select v-model="dateFilter"
                 class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">All Dates</option>
@@ -218,356 +228,367 @@ function toggleSelectAll(event) {
                 Delete {{ selectedTransactionIds.length }} item<span v-if="selectedTransactionIds.length !== 1">s</span>
             </button>
         </div>
-        <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead class="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                        <th class="p-4">
-                            <input id="checkbox-all" type="checkbox" @click.stop
-                                :checked="selectedTransactionIds.length === filteredTransactions.length && filteredTransactions.length > 0"
-                                @change="toggleSelectAll"
-                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                        </th>
-                        <th class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">Order
-                            ID</th>
-                        <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
-                            Customer</th>
-                        <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">Email
-                        </th>
-                        <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">Total
-                        </th>
-                        <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">Due
-                            Date</th>
-                        <th class="p-4 text-xs font-medium text-status text-gray-500 uppercase dark:text-gray-400">
-                            Status
-                        </th>
-                        <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
-                            Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="t in filteredTransactions" :key="t.id"
-                        class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                        @click="selectedTransaction = t; isTransactionVisible = true">
-                        <td class="p-4">
-                            <input :id="`checkbox-${t.id}`" type="checkbox" :value="t.id"
-                                v-model="selectedTransactionIds" @click.stop
-                                class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
-                        </td>
-                        <td class="p-4 text-sm text-gray-900 dark:text-white font-semibold">#{{ t.id }}</td>
-                        <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.customer }}</td>
-                        <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.email }}</td>
-                        <td class="p-4 text-sm text-gray-900 dark:text-white">${{ t.total }}</td>
-                        <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.due_date }}</td>
-                        <td class="p-4 text-center">
-                            <span :class="{
-                                'bg-green-100 text-green-800': t.status === 'Completed',
-                                'bg-yellow-100 text-yellow-800': t.status === 'Pending',
-                                'bg-red-100 text-red-800': t.status === 'Failed',
-                                'bg-blue-100 text-blue-800': t.status === 'Refunded'
-                            }" class="px-2 py-1 rounded text-xs font-semibold">
-                                {{ t.status }}
-                            </span>
-                        </td>
-                        <td class="p-4 text-center relative">
-                            <button @click.stop="toggleDropdown(t.id)"
-                                class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            </button>
+        <div class="relative overflow-visible bg-white dark:bg-gray-800 rounded-lg shadow">
+            <div class="overflow-x-auto">
 
-                            <div v-if="activeDropdown === t.id"
-                                class="absolute right-0 z-10 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg">
-                                <ul class="py-1 text-sm text-gray-700 dark:text-gray-100">
-                                    <li>
-                                        <button
-                                            @click.stop="selectedTransaction = t; isTransactionVisible = true; closeDropdown()"
-                                            class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
-                                            Update
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button
-                                            @click.stop="isDeleteVisible = true; transactionToDelete = t; closeDropdown()"
-                                            class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-gray-600">
-                                            Delete
-                                        </button>
-                                    </li>
-                                </ul>
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="p-4">
+                                <input id="checkbox-all" type="checkbox" @click.stop
+                                    :checked="selectedTransactionIds.length === filteredTransactions.length && filteredTransactions.length > 0"
+                                    @change="toggleSelectAll"
+                                    class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
+                            </th>
+                            <th class="p-4 text-xs font-medium text-left text-gray-500 uppercase dark:text-gray-400">
+                                Order
+                                ID</th>
+                            <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
+                                Customer</th>
+                            <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
+                                Email
+                            </th>
+                            <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
+                                Total
+                            </th>
+                            <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
+                                Due
+                                Date</th>
+                            <th class="p-4 text-xs font-medium text-status text-gray-500 uppercase dark:text-gray-400">
+                                Status
+                            </th>
+                            <th class="p-4 text-xs font-medium text-center text-gray-500 uppercase dark:text-gray-400">
+                                Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="t in filteredTransactions" :key="t.id"
+                            class="hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                            @click="selectedTransaction = t; isTransactionVisible = true">
+                            <td class="p-4">
+                                <input :id="`checkbox-${t.id}`" type="checkbox" :value="t.id"
+                                    v-model="selectedTransactionIds" @click.stop
+                                    class="w-4 h-4 border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:focus:ring-primary-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" />
+                            </td>
+                            <td class="p-4 text-sm text-gray-900 dark:text-white font-semibold">#{{ t.id }}</td>
+                            <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.customer }}</td>
+                            <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.email }}</td>
+                            <td class="p-4 text-sm text-gray-900 dark:text-white">${{ t.total }}</td>
+                            <td class="p-4 text-sm text-gray-900 dark:text-white">{{ t.due_date }}</td>
+                            <td class="p-4 text-center">
+                                <span :class="{
+                                    'bg-green-100 text-green-800': t.status === 'Completed',
+                                    'bg-yellow-100 text-yellow-800': t.status === 'Pending',
+                                    'bg-red-100 text-red-800': t.status === 'Failed',
+                                    'bg-blue-100 text-blue-800': t.status === 'Refunded'
+                                }" class="px-2 py-1 rounded text-xs font-semibold">
+                                    {{ t.status }}
+                                </span>
+                            </td>
+                            <td class="p-4 text-center relative">
+                                <button @click.stop="toggleDropdown(t.id)"
+                                    class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </button>
+
+                                <div v-if="activeDropdown === t.id"
+                                    class="absolute right-0 z-10 mt-2 w-32 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md shadow-lg">
+                                    <ul class="py-1 text-sm text-gray-700 dark:text-gray-100">
+                                        <li>
+                                            <button
+                                                @click.stop="selectedTransaction = t; isUpdateVisible = true; closeDropdown()" 
+                                                class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                                Update
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                @click.stop="isDeleteVisible = true; transactionToDelete = t; closeDropdown()"
+                                                class="w-full text-left px-4 py-2 text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-gray-600">
+                                                Delete
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+
+                        </tr>
+                    </tbody>
+                    <div id="showTransaction" v-if="isTransactionVisible"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
+                            @click.stop>
+                            <div class="flex flex-col gap-1 mb-4">
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Transaction #{{ selectedTransaction?.id }}
+                                </h2>
+                                <h1 class="text-base font-medium text-gray-900 dark:text-white">
+                                    {{ selectedTransaction?.customer }}
+                                </h1>
                             </div>
-                        </td>
-
-                    </tr>
-                </tbody>
-                <div id="showTransaction" v-if="isTransactionVisible"
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-                        @click.stop>
-                        <div class="flex flex-col gap-1 mb-4">
-                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-                                Transaction #{{ selectedTransaction?.id }}
-                            </h2>
-                            <h1 class="text-base font-medium text-gray-900 dark:text-white">
-                                {{ selectedTransaction?.customer }}
-                            </h1>
+                            <div class="space-y-6">
+                                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Order Details
+                                </h2>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-1 font-medium">Product Name</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.product_name" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Quantity</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.quantity" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Price</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.price" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Total</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction ? ('$' + selectedTransaction.total) : ''" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Due Date</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.due_date" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Status</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.status" />
+                                    </div>
+                                </div>
+                                <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Customer Details
+                                </h2>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block mb-1 font-medium">Customer Name</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.customer" />
+                                    </div>
+                                    <div>
+                                        <label class="block mb-1 font-medium">Email</label>
+                                        <input type="text" disabled
+                                            class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
+                                            :value="selectedTransaction?.email" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-2 mt-6">
+                                <button type="button" @click="isTransactionVisible = false; selectedTransaction = null"
+                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+                                    Close
+                                </button>
+                            </div>
                         </div>
-                        <div class="space-y-6">
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Order Details</h2>
+                    </div>
+                </table>
+                <div v-if="isDeleteVisible" id="deleteModal"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                    <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+                            Confirm Deletion</h2>
+                        <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you
+                            want to delete this transaction?<br>
+                            This action cannot be undone.</p>
+
+                        <div class="flex justify-end gap-2">
+                            <button @click="isDeleteVisible = false; subcategoryToDelete = null"
+                                class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
+                                Cancel
+                            </button>
+                            <button @click="deletePromo"
+                                class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
+                                Yes, delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="isUpdateVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                    <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded shadow-lg max-w-xl w-full">
+                        <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
+                            Update Transaction
+                        </h2>
+                        <form class="space-y-6" @submit.prevent="updateTransaction">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Order Details</h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block mb-1 font-medium">Product Name</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.product_name" />
+                                    <input type="text" v-model="transactionToUpdate.product_name"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Quantity</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.quantity" />
+                                    <input type="number" v-model="transactionToUpdate.quantity"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Price</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.price" />
+                                    <input type="number" v-model="transactionToUpdate.price"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Total</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction ? ('$' + selectedTransaction.total) : ''" />
+                                    <input type="number" v-model="transactionToUpdate.total"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Due Date</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.due_date" />
+                                    <input type="date" v-model="transactionToUpdate.due_date"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Status</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.status" />
+                                    <select v-model="transactionToUpdate.status"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
+                                        <option value="Completed">Completed</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Refunded">Refunded</option>
+                                        <option value="Failed">Failed</option>
+                                    </select>
                                 </div>
                             </div>
-                            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Customer Details
-                            </h2>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Customer Details
+                            </h3>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block mb-1 font-medium">Customer Name</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.customer" />
+                                    <input type="text" v-model="transactionToUpdate.customer"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                                 <div>
                                     <label class="block mb-1 font-medium">Email</label>
-                                    <input type="text" disabled
-                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300"
-                                        :value="selectedTransaction?.email" />
+                                    <input type="email" v-model="transactionToUpdate.email"
+                                        class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
                                 </div>
                             </div>
+                            <div class="flex justify-between mt-6">
+                                <button type="submit"
+                                    class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Update
+                                    Transaction</button>
+                                <button type="button" @click="isUpdateVisible = false"
+                                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Close</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div v-if="isReportVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
+                    <div @click.stop class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-lg w-full">
+                        <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white text-center">
+                            Transactions Report
+                        </h2>
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-green-50 dark:bg-green-900 rounded-lg p-4 flex items-center shadow">
+                                <div class="flex-1">
+                                    <div class="text-lg font-semibold text-green-800 dark:text-green-200">Total
+                                        Transactions
+                                    </div>
+                                    <div class="text-2xl font-bold text-green-900 dark:text-green-100">{{
+                                        filteredTransactions.length }}</div>
+                                </div>
+                                <svg class="w-8 h-8 text-green-400 dark:text-green-200" fill="none"
+                                    stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M9 16h6"></path>
+                                </svg>
+                            </div>
+                            <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 flex items-center shadow">
+                                <div class="flex-1">
+                                    <div class="text-lg font-semibold text-blue-800 dark:text-blue-200">Total Sales
+                                    </div>
+                                    <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">${{
+                                        filteredTransactions.reduce((sum, t) => sum + Number(t.total), 0)}}</div>
+                                </div>
+                                <svg class="w-8 h-8 text-blue-400 dark:text-blue-200" fill="none" stroke="currentColor"
+                                    stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8"></path>
+                                </svg>
+                            </div>
+                            <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4 shadow">
+                                <div class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Status
+                                    Breakdown</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="flex items-center justify-between">
+                                        <span>Completed</span>
+                                        <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
+                                            'Completed').length}}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Pending</span>
+                                        <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
+                                            'Pending').length}}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Refunded</span>
+                                        <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
+                                            'Refunded').length}}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Failed</span>
+                                        <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
+                                            'Failed').length}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow flex items-center">
+                                <div class="flex-1">
+                                    <div class="text-lg font-semibold text-gray-700 dark:text-gray-200">Date Range</div>
+                                    <div class="text-base text-gray-600 dark:text-gray-300">
+                                        {{ dateFilter === 'last7' ? 'Last 7 Days' : dateFilter === 'selectDate' ?
+                                            selectedDate : 'All Dates' }}
+                                    </div>
+                                </div>
+                                <svg class="w-8 h-8 text-gray-400 dark:text-gray-200" fill="none" stroke="currentColor"
+                                    stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="flex justify-end space-x-2 mt-6">
-                            <button type="button" @click="isTransactionVisible = false; selectedTransaction = null"
-                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-                                Close
-                            </button>
+                        <div class="flex justify-between mt-8">
+                            <button @click="exportCSV"
+                                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">Export
+                                CSV</button>
+                            <button @click="isReportVisible = false"
+                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium">Close</button>
                         </div>
                     </div>
                 </div>
-            </table>
-            <div v-if="isDeleteVisible" id="deleteModal"
-                class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
-                    <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
-                        Confirm Deletion</h2>
-                    <p class="text-gray-600 dark:text-gray-300 mb-6">Are you sure you
-                        want to delete this transaction?<br>
-                        This action cannot be undone.</p>
+            </div>
+            </div>
+            <footer
+                class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
+                <div class="flex items-center space-x-4">
+                    <span>© 2025 FreshBytes. All rights reserved.</span>
+                    <a href="#" class="hover:underline">Privacy Policy</a>
+                    <a href="#" class="hover:underline">API</a>
+                    <a href="#" class="hover:underline">Contact</a>
+                </div>
 
-                    <div class="flex justify-end gap-2">
-                        <button @click="isDeleteVisible = false; subcategoryToDelete = null"
-                            class="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
-                            Cancel
-                        </button>
-                        <button @click="deletePromo"
-                            class="px-4 py-2 text-sm text-white bg-red-600 rounded hover:bg-red-700">
-                            Yes, delete
-                        </button>
-                    </div>
+                <div class="flex items-center space-x-2 mt-2 md:mt-0">
+                    <select class="text-sm bg-transparent focus:outline-none dark:text-white">
+                        <option selected>English (US)</option>
+                    </select>
+                    <button class="text-gray-500 dark:text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                    </button>
                 </div>
-            </div>
-            <div v-if="isUpdateVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded shadow-lg max-w-xl w-full">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">
-                        Update Transaction
-                    </h2>
-                    <form class="space-y-6" @submit.prevent="updateTransaction">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Order Details</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block mb-1 font-medium">Product Name</label>
-                                <input type="text" v-model="transactionToUpdate.product_name"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Quantity</label>
-                                <input type="number" v-model="transactionToUpdate.quantity"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Price</label>
-                                <input type="number" v-model="transactionToUpdate.price"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Total</label>
-                                <input type="number" v-model="transactionToUpdate.total"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Due Date</label>
-                                <input type="date" v-model="transactionToUpdate.due_date"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Status</label>
-                                <select v-model="transactionToUpdate.status"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300">
-                                    <option value="Completed">Completed</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Refunded">Refunded</option>
-                                    <option value="Failed">Failed</option>
-                                </select>
-                            </div>
-                        </div>
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Customer Details</h3>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block mb-1 font-medium">Customer Name</label>
-                                <input type="text" v-model="transactionToUpdate.customer"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                            <div>
-                                <label class="block mb-1 font-medium">Email</label>
-                                <input type="email" v-model="transactionToUpdate.email"
-                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300" />
-                            </div>
-                        </div>
-                        <div class="flex justify-between mt-6">
-                            <button type="submit"
-                                class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Update
-                                Transaction</button>
-                            <button type="button" @click="isUpdateVisible = false"
-                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Close</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div v-if="isReportVisible" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
-                <div @click.stop class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-lg w-full">
-                    <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white text-center">
-                        Transactions Report
-                    </h2>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div class="bg-green-50 dark:bg-green-900 rounded-lg p-4 flex items-center shadow">
-                            <div class="flex-1">
-                                <div class="text-lg font-semibold text-green-800 dark:text-green-200">Total Transactions
-                                </div>
-                                <div class="text-2xl font-bold text-green-900 dark:text-green-100">{{
-                                    filteredTransactions.length }}</div>
-                            </div>
-                            <svg class="w-8 h-8 text-green-400 dark:text-green-200" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M9 16h6"></path>
-                            </svg>
-                        </div>
-                        <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 flex items-center shadow">
-                            <div class="flex-1">
-                                <div class="text-lg font-semibold text-blue-800 dark:text-blue-200">Total Sales</div>
-                                <div class="text-2xl font-bold text-blue-900 dark:text-blue-100">${{
-                                    filteredTransactions.reduce((sum, t) => sum + Number(t.total), 0)}}</div>
-                            </div>
-                            <svg class="w-8 h-8 text-blue-400 dark:text-blue-200" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v8m-4-4h8"></path>
-                            </svg>
-                        </div>
-                        <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4 shadow">
-                            <div class="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">Status
-                                Breakdown</div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="flex items-center justify-between">
-                                    <span>Completed</span>
-                                    <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
-                                        'Completed').length}}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span>Pending</span>
-                                    <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
-                                        'Pending').length}}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span>Refunded</span>
-                                    <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
-                                        'Refunded').length}}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span>Failed</span>
-                                    <span class="font-bold">{{filteredTransactions.filter(t => t.status ===
-                                        'Failed').length}}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow flex items-center">
-                            <div class="flex-1">
-                                <div class="text-lg font-semibold text-gray-700 dark:text-gray-200">Date Range</div>
-                                <div class="text-base text-gray-600 dark:text-gray-300">
-                                    {{ dateFilter === 'last7' ? 'Last 7 Days' : dateFilter === 'selectDate' ?
-                                        selectedDate : 'All Dates' }}
-                                </div>
-                            </div>
-                            <svg class="w-8 h-8 text-gray-400 dark:text-gray-200" fill="none" stroke="currentColor"
-                                stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                </path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="flex justify-between mt-8">
-                        <button @click="exportCSV"
-                            class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">Export
-                            CSV</button>
-                        <button @click="isReportVisible = false"
-                            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 font-medium">Close</button>
-                    </div>
-                </div>
-            </div>
+            </footer>
         </div>
-        <footer
-            class="absolute bottom-0 left-0 w-full border-t border-gray-200 dark:border-gray-700 py-4 flex flex-col md:flex-row items-center justify-between px-4 text-sm text-gray-500 dark:text-gray-400">
-            <div class="flex items-center space-x-4">
-                <span>© 2025 FreshBytes. All rights reserved.</span>
-                <a href="#" class="hover:underline">Privacy Policy</a>
-                <a href="#" class="hover:underline">API</a>
-                <a href="#" class="hover:underline">Contact</a>
-            </div>
-
-            <div class="flex items-center space-x-2 mt-2 md:mt-0">
-                <select class="text-sm bg-transparent focus:outline-none dark:text-white">
-                    <option selected>English (US)</option>
-                </select>
-                <button class="text-gray-500 dark:text-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                </button>
-            </div>
-        </footer>
-    </div>
 </template>

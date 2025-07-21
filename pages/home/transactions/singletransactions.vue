@@ -1,13 +1,77 @@
 <script setup>
-
 definePageMeta({
-  layout: "home",
+    layout: "home",
 })
 
-const config = useRuntimeConfig()
-const api = config.public.API_LINK
+const pending = ref(false) 
 
+const invoice = ref({
+    id: 10234,
+    dueDate: "2025-08-15",
+    subtotal: 200,
+    tax: 20,
+    shipping: 10,
+    total: 230,
+    customer: {
+        name: "Jane Doe",
+        email: "jane@example.com",
+        phone: "+1 555-123-4567",
+        country: "USA",
+        address: "123 Main St, Springfield, IL"
+    },
+    items: [
+        {
+            id: 1,
+            name: "Fresh Apple",
+            description: "Organic Fuji apple, 1 lb",
+            qty: 2,
+            price: 3.5,
+            discount: 0,
+            total: 7.0
+        },
+        {
+            id: 2,
+            name: "Avocado Pack",
+            description: "5-pack premium avocados",
+            qty: 1,
+            price: 10.0,
+            discount: 10,
+            total: 9.0
+        },
+        {
+            id: 3,
+            name: "Almond Milk",
+            description: "Unsweetened 1L carton",
+            qty: 3,
+            price: 4.5,
+            discount: 0,
+            total: 13.5
+        }
+    ],
+    history: [
+        {
+            action: "Order placed",
+            timestamp: "2025-07-18 10:34 AM",
+            details: "Customer completed checkout."
+        },
+        {
+            action: "Payment confirmed",
+            timestamp: "2025-07-18 10:36 AM",
+            details: "Paid via Stripe."
+        },
+        {
+            action: "Shipped",
+            timestamp: "2025-07-19 02:14 PM",
+            details: "Tracking #1234567890"
+        },
+        {
+            action: "Delivered",
+            timestamp: "2025-07-21 09:45 AM"
+        }
+    ]
+})
 </script>
+
 <template>
     <div class="bg-white w-full h-full absolute top-0 left-0 z-10 flex items-center justify-center" v-if="pending">
         <div role="status">
@@ -60,11 +124,95 @@ const api = config.public.API_LINK
                 </div>
             </ol>
         </nav>
-        <div class="flex justify-between items-center mt-3">
-            <h1 class="text-2xl font-semibold text-black-900 dark:text-white-900">
-                Invoice
-            </h1>
-            
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mt-6 mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">Invoice</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Order <span class="font-medium">#{{ invoice.id }}</span> -
+                    <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                        Completed
+                    </span>
+                </p>
+                <p class="text-sm text-gray-500 mt-1">Due: <strong>{{ invoice.dueDate }}</strong></p>
+            </div>
+            <div class="flex gap-2 mt-4 md:mt-0">
+                <button class="px-4 py-2 border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">View
+                    receipt</button>
+                <button
+                    class="px-4 py-2 border rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Refund</button>
+            </div>
+        </div>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Order Details -->
+            <div class="md:col-span-2 bg-white p-6 rounded-lg shadow">
+                <h2 class="text-lg font-semibold mb-4">Order details</h2>
+                <table class="w-full text-sm border rounded-lg overflow-hidden">
+                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Product</th>
+                            <th class="px-4 py-3 text-center">Qty</th>
+                            <th class="px-4 py-3 text-right">Price</th>
+                            <th class="px-4 py-3 text-right">Discount</th>
+                            <th class="px-4 py-3 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        <tr v-for="item in invoice.items" :key="item.id"
+                            class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-gray-900 dark:text-white">{{ item.name }}</div>
+                                <div class="text-xs text-gray-500">{{ item.description }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">{{ item.qty }}</td>
+                            <td class="px-4 py-3 text-right">${{ item.price.toFixed(2) }}</td>
+                            <td class="px-4 py-3 text-right">{{ item.discount }}%</td>
+                            <td class="px-4 py-3 text-right font-semibold">${{ item.total.toFixed(2) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt-6 text-right space-y-1 text-sm text-gray-700 dark:text-gray-200">
+                    <p>Subtotal: <span class="float-right font-medium">${{ invoice.subtotal.toFixed(2) }}</span></p>
+                    <p>Tax: <span class="float-right">${{ invoice.tax.toFixed(2) }}</span></p>
+                    <p>Shipping: <span class="float-right">${{ invoice.shipping.toFixed(2) }}</span></p>
+                    <hr class="my-2 border-gray-200 dark:border-gray-600" />
+                    <p class="text-lg font-bold">Total: <span class="float-right">${{ invoice.total.toFixed(2) }}</span>
+                    </p>
+                </div>
+
+            </div>
+
+         
+            <div class="space-y-6">
+               
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-lg font-semibold mb-4">Customer details</h2>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li><strong>Name:</strong> {{ invoice.customer.name }}</li>
+                        <li><strong>Email:</strong> {{ invoice.customer.email }}</li>
+                        <li><strong>Phone:</strong> {{ invoice.customer.phone }}</li>
+                        <li><strong>Country:</strong> {{ invoice.customer.country }}</li>
+                        <li><strong>Address:</strong> {{ invoice.customer.address }}</li>
+                    </ul>
+                </div>
+
+              
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-lg font-semibold mb-4">Order history</h2>
+                    <ul class="space-y-4">
+                        <li v-for="(event, index) in invoice.history" :key="index" class="relative pl-6">
+                            <span class="absolute left-0 top-1.5 w-3 h-3 rounded-full bg-blue-500"></span>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ event.action }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ event.timestamp }}</p>
+                            <p v-if="event.details" class="text-xs italic text-gray-400">{{ event.details }}</p>
+                        </li>
+                    </ul>
+
+                </div>
+            </div>
         </div>
     </div>
 </template>
