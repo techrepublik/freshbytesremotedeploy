@@ -1,41 +1,39 @@
 <template>
-    <div
-        class="h-screen flex flex-col space-y-8 items-center justify-center bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden">
-        <img src="@/assets/images/fruits1.png" alt="Fruits"
-            class="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
+  <div class="h-screen flex items-center bg-gradient-to-br from-green-50 to-green-100 relative overflow-hidden">
+    
+    <!-- Background Image Overlay -->
+    <img src="@/assets/images/fruits1.png" alt="Fruits"
+      class="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" />
 
-        <!-- Logo and Heading -->
-        <div class="z-10 flex flex-col items-center space-y-2">
-            <img src="@/assets/images/logos-12-12.png" alt="FreshBytes Logo" class="w-16 h-16" />
-            <h1 class="font-extrabold text-4xl text-gray-800">FreshBytes Admin</h1>
-        </div>
+    <!-- Form Section (shifted slightly right) -->
+    <div class="relative z-30 w-full max-w-xl ml-60 space-y-6">
+      <!-- Centered Logo + Heading -->
+      <div class="flex flex-col items-center space-y-2">
+        <img src="@/assets/images/logos-12-12.png" alt="FreshBytes Logo" class="w-16 h-16" />
+        <h1 class="font-extrabold text-4xl text-gray-800 text-center mb-6">FreshBytes Admin</h1>
+      </div>
 
-        <!-- Error Display -->
-        <div v-if="error"
-            class="z-10 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg text-lg max-w-md text-center">
-            {{ error }}
-        </div>
+      <!-- Error -->
+      <div v-if="error"
+        class="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg text-lg text-center">
+        {{ error }}
+      </div>
 
-        <div class="relative z-10 w-full max-w-md">
-            <img src="@/assets/images/fruits.png" alt="Form Background"
-                class="absolute -top-6 -right-200 w-full h-full scale-400 object-contain opacity-100 pointer-events-none" />
-
-
-            <!-- Auth Form -->
-            <div class="align-center bg-white/90 backdrop-blur-md p-12 rounded-2xl shadow-xl">
-                <h2 class="text-3xl font-semibold mb-6 text-center">Welcome Back</h2>
-                <FormAuth @child-action="handleLogin" :form="form" :isLoading="isLoading" />
-            </div>
-            
-        </div>
-
-        <!-- Password Reset -->
-        <button @click="handlePasswordReset" class="z-10 text-blue-600 hover:text-blue-800 underline text-base"
-            :disabled="isLoading">
-            Forgot Password?
-        </button>
+      <!-- Auth Form -->
+      <div class="bg-white/90 backdrop-blur-md p-20 rounded-2xl shadow-2xl w-full space-y-8">
+        <h2 class="text-4xl font-semibold mb-20 text-center">Welcome Back</h2>
+        <FormAuth @child-action="handleLogin" :form="form" :isLoading="isLoading" />
+      </div>
     </div>
+
+    <!-- Fruit Image (no gap on the right) -->
+    <div class="relative z-0 hidden lg:flex items-end justify-end h-full flex-grow">
+      <img src="@/assets/images/fruits.png" alt="Fruits"
+        class="h-full w-full object-cover pointer-events-none" />
+    </div>
+  </div>
 </template>
+
 
 
 <script setup>

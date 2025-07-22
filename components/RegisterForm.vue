@@ -14,6 +14,13 @@
             <input type="password" id="password" v-model="form.password" required
                 class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full px-4 py-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-emerald-500 dark:focus:border-emerald-500" />
         </div>
+        <div class="mb-6">
+            <label for="password" class="block mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+                Confirm your password
+            </label>
+            <input type="password" id="password" v-model="form.password" required
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-base rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block w-full px-4 py-3 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-emerald-500 dark:focus:border-emerald-500" />
+        </div>
 
         <!-- Remember Me -->
         <div class="flex items-center mb-6">
@@ -35,35 +42,30 @@
 
     <!-- Register Link -->
     <div class="mt-6 text-base text-center text-gray-700 dark:text-gray-300">
-        <span>Don't have an account?</span>
-        <NuxtLink to="/register" class="ml-1 text-emerald-700 font-semibold hover:underline">
-            Sign up
+        <span>Already have an account?</span>
+        <NuxtLink to="/Login" class="ml-1 text-emerald-700 font-semibold hover:underline">
+            Log In
         </NuxtLink>
 
-    </div>
-    <div class="text-center justify-between text-sm">
-        <button @click="handlePasswordReset" class=" text-emerald-700 hover:underline" :disabled="isLoading">
-            Forgot Password?
-        </button>
     </div>
 </template>
 
 <script setup>
 const props = defineProps({
-    form: {
-        type: Object,
-        required: true,
-        default: () => ({ email: '', password: '' })
-    },
-    isLoading: {
-        type: Boolean,
-        default: false
-    }
+  form: {
+    type: Object,
+    required: true,
+  },
+  isLoading: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['child-action'])
 
 const triggerAction = () => {
-    emit('child-action', props.form)// Emit the custom event
+  emit('child-action', props.form)
 }
 </script>
+
