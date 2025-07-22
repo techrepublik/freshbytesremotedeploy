@@ -63,7 +63,5 @@ const props = defineProps({
 
 const emit = defineEmits(['child-action'])
 
-const triggerAction = () => {
-    emit('child-action', props.form)// Emit the custom event
-}
+
 </script>

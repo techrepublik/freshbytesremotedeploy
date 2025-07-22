@@ -181,7 +181,7 @@ async function updatePromo() {
         const formData = new FormData();
         formData.append('promo_name', promoToUpdate.value.promo_name);
         formData.append('promo_description', promoToUpdate.value.promo_description);
-    
+
         formData.append('promo_description', promoToUpdate.value.promo_description)
         formData.append('discount_type', promoToUpdate.value.discount_type)
         formData.append('discount_amount', promoToUpdate.value.discount_amount)
@@ -626,6 +626,22 @@ async function deleteSelectedPromos() {
                                         </div>
                                     </td>
                                 </tr>
+                                <tr v-if="filteredPromos.length === 0">
+                                    <td colspan="11" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        <div class="flex flex-col items-center justify-center space-y-3">
+                                            <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">No promos
+                                                found</h3>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Try adjusting your
+                                                filters or check back later.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+
                             </tbody>
                             <div id="showPromo" v-if="isPromoVisible"
                                 class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
@@ -720,6 +736,7 @@ async function deleteSelectedPromos() {
                                 </div>
                             </div>
                         </table>
+
                         <div v-if="isDeleteVisible" id="deleteModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
                             <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">

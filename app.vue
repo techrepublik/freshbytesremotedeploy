@@ -2,8 +2,8 @@
   <div class="light">
     <NuxtRouteAnnouncer />
     <NuxtLayout>
-      <NuxtPage />
       <PageLoader />
+      <NuxtPage />
     </NuxtLayout>
   </div>
 </template>
