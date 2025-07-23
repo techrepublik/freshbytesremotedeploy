@@ -162,7 +162,7 @@ const fetchDashboardData = async () => {
   loading.value = true
   try {
     const params = new URLSearchParams(dateRangeParams.value)
-    const response = await $fetch(`${api}/api/dashboard/admin/?${params.toString()}`)
+    const response = await $fetch(`${api}/api/admin/dashboard/?${params.toString()}`)
     
     if (response) {
       dashboardData.value = {

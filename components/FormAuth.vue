@@ -63,5 +63,9 @@ const props = defineProps({
 
 const emit = defineEmits(['child-action'])
 
+const triggerAction = () => {
+    emit('child-action');
+}
+
 
 </script>

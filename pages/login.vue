@@ -52,6 +52,7 @@ const error = ref('')
 
 const handleLogin = async () => {
     error.value = ''
+    console.log("try");
 
     try {
         await login(form)
