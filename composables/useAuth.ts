@@ -35,11 +35,11 @@ export const useAuth = () => {
   const setAccessToken = (newToken: string | null) => {
     accessToken.value = newToken
   }
-  
+
   const setRefreshToken = (newToken: string | null) => {
     refreshToken.value = newToken
   }
-  
+
   const setUser = (newUser: any) => {
     user.value = newUser
   }
@@ -48,7 +48,7 @@ export const useAuth = () => {
     isLoading.value = true
     try {
       console.log('Sending login request:', credentials) // Debug log
-      
+
       const response = await $fetch<LoginResponse>(`${apiBase}/api/auth/login/`, {
         method: 'POST',
         headers: {
@@ -59,13 +59,13 @@ export const useAuth = () => {
           password: credentials.password
         }
       })
-      
+
       console.log('Login response:', response) // Debug log
-      
+
       // Store tokens
       accessToken.value = response.access
       refreshToken.value = response.refresh
-      
+
       // If user data is included in response, store it
       if (response.user) {
         user.value = response.user
@@ -82,7 +82,7 @@ export const useAuth = () => {
           console.error('Failed to fetch user data:', userError)
         }
       }
-      
+
       // Set tokens in cookies for persistence
       const accessTokenCookie = useCookie('auth-access-token', {
         httpOnly: false,
@@ -90,17 +90,17 @@ export const useAuth = () => {
         sameSite: 'lax',
         maxAge: 60 * 15 // 15 minutes for access token
       })
-      
+
       const refreshTokenCookie = useCookie('auth-refresh-token', {
         httpOnly: false,
         secure: false,
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7 // 7 days for refresh token
       })
-      
+
       accessTokenCookie.value = response.access
       refreshTokenCookie.value = response.refresh
-      
+
       return response
     } catch (error: any) {
       console.error('Login error:', error) // Debug log
@@ -124,7 +124,7 @@ export const useAuth = () => {
       })
 
       accessToken.value = response.access
-      
+
       const accessTokenCookie = useCookie('auth-access-token')
       accessTokenCookie.value = response.access
 
@@ -140,7 +140,7 @@ export const useAuth = () => {
   const logout = async () => {
     try {
       if (refreshToken.value) {
-        await $fetch(`${apiBase}/api/auth/logout/`, { 
+        await $fetch(`${apiBase}/api/auth/logout/`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${accessToken.value}`
@@ -157,12 +157,12 @@ export const useAuth = () => {
       accessToken.value = null
       refreshToken.value = null
       user.value = null
-      
+
       const accessTokenCookie = useCookie('auth-access-token')
       const refreshTokenCookie = useCookie('auth-refresh-token')
       accessTokenCookie.value = null
       refreshTokenCookie.value = null
-      
+
       await navigateTo('/login')
     }
   }
@@ -170,7 +170,7 @@ export const useAuth = () => {
   const resetPassword = async (email: string) => {
     const response = await $fetch<ResetPasswordResponse>(`${apiBase}/api/auth/reset-password/`, {
       method: 'POST',
-      body: { 
+      body: {
         user_email: email
       }
     })
@@ -178,6 +178,45 @@ export const useAuth = () => {
   }
 
   const isLoggedIn = computed(() => !!user.value && !!accessToken.value)
+  const register = async ({
+    email,
+    password,
+    first_name,
+    last_name,
+    user_name,
+    user_phone
+  }: {
+    email: string
+    password: string
+    first_name: string
+    last_name: string
+    user_name: string
+    user_phone: string
+  }) => {
+    isLoading.value = true
+
+    try {
+      await $fetch(`${apiBase}/api/auth/register/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: {
+          user_email: email,
+          password,
+          first_name,
+          last_name,
+          user_name,
+          user_phone
+        },
+      })
+    } catch (error: any) {
+      console.error('Registration error:', error)
+      throw new Error(error.data?.detail || error.data?.message || 'Registration failed')
+    } finally {
+      isLoading.value = false
+    }
+  }
 
   return {
     user: readonly(user),
@@ -189,6 +228,8 @@ export const useAuth = () => {
     logout,
     resetPassword,
     refreshAccessToken,
+    // 🆕 Add this:
+    register,
     // Internal setters (use cautiously)
     setAccessToken,
     setRefreshToken,

@@ -25,8 +25,9 @@ const getAuthHeaders = () => {
         Authorization: `Bearer ${token}`
     } : {}
 }
+
 const { data: promos, pending: pendingPromos, refresh: refreshPromos } = await useFetch(
-    `${api}/api/products/`,
+    `${api}/api/promos/`,
     {
         server: false,
         headers: computed(() => getAuthHeaders()),
@@ -40,12 +41,12 @@ const { data: promos, pending: pendingPromos, refresh: refreshPromos } = await u
 );
 
 const { data: sellers, pending: pendingSellers, refresh: refreshSellers } = await useFetch(
-    `${api}/api/products/`,
+    `${api}/api/sellers/`,
     {
         server: false,
         headers: computed(() => getAuthHeaders()),
         onResponseError({ response }) {
-            console.error('Products API Error:', response.status, response._data);
+            console.error('Sellers API Error:', response.status, response._data);
             if (response.status === 401) {
                 navigateTo('/login');
             }
@@ -75,48 +76,6 @@ const sellersArray = computed(() => {
 });
 const loading = computed(() => pendingPromos.value || pendingSellers.value || pendingProducts.value);
 
-// promos.value = [
-//     {
-//         promo_id: "pid00125",
-//         promo_name: "Firsy Promo",
-//         promo_description: "less 40%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-2334',
-//         promo_end_date: '2025-4454',
-//         is_active: false,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-//     {
-//         promo_id: "pid00df5",
-//         promo_name: "WOW PROMO",
-//         promo_description: "less 20%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-2334',
-//         promo_end_date: '2025-445e4',
-//         is_active: false,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-
-//     {
-//         promo_id: "pid001345",
-//         promo_name: "Last Promo",
-//         promo_description: "less 60%",
-//         discount_type: "PERCENTAGE",
-//         discount_amount: 0,
-//         discount_percentage: 20,
-//         promo_start_date: '2025-234',
-//         promo_end_date: '2025-4414',
-//         is_active: true,
-//         created_at: "2025-06-30T11:11:06.427424+08:00",
-//         updated_at: "2025-06-30T11:11:06.427450+08:00"
-//     },
-// ];
 
 const newPromo = ref({
     promo_name: "",
@@ -134,47 +93,74 @@ const newPromo = ref({
 });
 
 async function addPromo() {
-    // Validation
-    if (!newPromo.value.promo_name ||
-        !newPromo.value.seller_id ||
-        !newPromo.value.product_id.length ||
-        !newPromo.value.discount_type
-    ) {
-        alert('Please fill in all required fields.');
-        return;
-    }
-
-    if (!Array.isArray(newPromo.value.product_id)) {
-        newPromo.value.product_id = [String(newPromo.value.product_id)];
-    } else {
-        newPromo.value.product_id = newPromo.value.product_id.map(String);
-    }
-
-    console.log('Submitting promo:', JSON.stringify(newPromo.value, null, 2));
-
     try {
-        await $fetch(`${api}api/promos/`, {
+        const formData = new FormData()
+
+        formData.append('promo_name', newPromo.value.promo_name || '')
+        formData.append('promo_description', newPromo.value.promo_description || '')
+        formData.append('discount_type', newPromo.value.discount_type || '')
+        formData.append('discount_amount', newPromo.value.discount_amount || '')
+        formData.append('discount_percentage', newPromo.value.discount_percentage || '')
+        formData.append(
+            'promo_start_date',
+            new Date(newPromo.value.promo_start_date).toISOString()
+        )
+
+        formData.append(
+            'promo_end_date',
+            new Date(newPromo.value.promo_end_date).toISOString()
+        )
+
+
+        formData.append('is_active', newPromo.value.is_active || '')
+        // Append seller_id (UUID string)
+        formData.append('seller_id', newPromo.value.seller_id || '')
+
+        // Append product_id(s) (UUID strings)
+        const productIds = Array.isArray(newPromo.value.product_id)
+            ? newPromo.value.product_id
+            : [newPromo.value.product_id]
+
+        productIds.forEach(id => {
+            if (id) formData.append('product_id', id)
+        })
+
+
+        // Debug output
+        console.log("Submitting promo:")
+        for (const [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`)
+        }
+
+        await $fetch(`${api}/api/promos/`, {
             method: 'POST',
-            body: newPromo.value,
-        });
-        alert("Data added successfully");
-        closeAddPromoModal();
-        await refreshNuxtData();
+            body: formData,
+            headers: getAuthHeaders(),
+        })
+
+        alert("Promo added successfully")
+        closeAddPromoModal()
+        await refreshPromos()
+
+        // Reset form
+        Object.keys(newPromo.value).forEach(key => newPromo.value[key] = null)
     } catch (error) {
-        alert('Failed to add promo.');
-        console.error('API error:', error);
-        if (error?.data) console.error('API error data:', error.data);
+        alert('Failed to add promo.')
+        console.error('API error:', error)
+        if (error?.data) console.error('Error data:', error.data)
     }
 }
+
+
 async function deletePromo() {
-    console.log('Deleting:', promoToDelete.value);
     if (!promoToDelete.value || !promoToDelete.value.promo_id) {
         alert('No promo selected for deletion.');
         return;
     }
     try {
-        await $fetch(`${api}api/promos/${promoToDelete.value.promo_id}/`, {
+        await $fetch(`${api}/api/promos/${promoToDelete.value.promo_id}/`, {
             method: 'DELETE',
+            headers: getAuthHeaders(), // Add Authorization header
         });
         alert('Promo deleted successfully.');
         isDeleteVisible.value = false;
@@ -185,22 +171,57 @@ async function deletePromo() {
         console.error('API error:', error.data || error);
     }
 }
+//working 
 async function updatePromo() {
     if (!promoToUpdate.value || !promoToUpdate.value.promo_id) {
-        alert('No category selected for update.');
+        alert('No promo selected for update.');
         return;
     }
     try {
-        await $fetch(`${api}api/promos/${promoToUpdate.value.promo_id}/`, {
-            method: 'PATCH', // or 'PATCH' if your API supports partial updates
-            body: promoToUpdate.value,
+        const formData = new FormData();
+        formData.append('promo_name', promoToUpdate.value.promo_name);
+        formData.append('promo_description', promoToUpdate.value.promo_description);
+
+        formData.append('promo_description', promoToUpdate.value.promo_description)
+        formData.append('discount_type', promoToUpdate.value.discount_type)
+        formData.append('discount_amount', promoToUpdate.value.discount_amount)
+        formData.append('discount_percentage', promoToUpdate.value.discount_percentage)
+        formData.append(
+            'promo_start_date',
+            new Date(promoToUpdate.value.promo_start_date).toISOString()
+        )
+
+        formData.append(
+            'promo_end_date',
+            new Date(promoToUpdate.value.promo_end_date).toISOString()
+        )
+
+
+        formData.append('is_active', promoToUpdate.value.is_active ? 'true' : 'false')
+
+        // Append seller_id (UUID string)
+        formData.append('seller_id', promoToUpdate.value.seller_id || '')
+
+        // Append product_id(s) (UUID strings)
+        const productIds = Array.isArray(promoToUpdate.value.product_id)
+            ? promoToUpdate.value.product_id
+            : [promoToUpdate.value.product_id]
+
+        productIds.forEach(id => {
+            if (id) formData.append('product_id', id)
+        })
+
+        await $fetch(`${api}/api/promos/${promoToUpdate.value.promo_id}/`, {
+            method: 'PATCH',
+            body: formData,
+            headers: getAuthHeaders(), // Only Authorization, NOT Content-Type
         });
         alert('Promo updated successfully.');
         isUpdateVisible.value = false;
         promoToUpdate.value = null;
         await refreshNuxtData();
     } catch (error) {
-        alert('Failed to update category.');
+        alert('Failed to update promo.');
         console.error('API error:', error.data || error);
     }
 }
@@ -288,6 +309,7 @@ async function deleteSelectedPromos() {
         console.error('API error:', error.data || error);
     }
 }
+
 
 </script>
 <template>
@@ -604,6 +626,22 @@ async function deleteSelectedPromos() {
                                         </div>
                                     </td>
                                 </tr>
+                                <tr v-if="filteredPromos.length === 0">
+                                    <td colspan="11" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        <div class="flex flex-col items-center justify-center space-y-3">
+                                            <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none"
+                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                            </svg>
+                                            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">No promos
+                                                found</h3>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">Try adjusting your
+                                                filters or check back later.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+
                             </tbody>
                             <div id="showPromo" v-if="isPromoVisible"
                                 class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
@@ -619,6 +657,16 @@ async function deleteSelectedPromos() {
                                     </div>
                                     <form class="space-y-4">
                                         <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block mb-1 font-medium">Seller</label>
+                                                <textarea rows="3" disabled
+                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedPromo?.seller_id }}</textarea>
+                                            </div>
+                                            <div>
+                                                <label class="block mb-1 font-medium">Product</label>
+                                                <textarea rows="3" disabled
+                                                    class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none">{{ selectedPromo?.product_id }}</textarea>
+                                            </div>
                                             <div>
                                                 <label class="block mb-1 font-medium">Promo Description</label>
                                                 <textarea rows="3" disabled
@@ -688,6 +736,7 @@ async function deleteSelectedPromos() {
                                 </div>
                             </div>
                         </table>
+
                         <div v-if="isDeleteVisible" id="deleteModal"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-gray-800/30">
                             <div @click.stop class="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-lg">
@@ -722,6 +771,27 @@ async function deleteSelectedPromos() {
                                             <input type="text" v-model="promoToUpdate.promo_name"
                                                 class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 text-gray-700 dark:text-gray-300 resize-none"
                                                 :placeholder="promoToUpdate?.promo_name || 'Promo Name'">
+                                        </div>
+                                        <div>
+                                            <label class="block mb-1 font-medium">Seller</label>
+                                            <select v-model="newPromo.seller_id"
+                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
+                                                <option disabled value="">Select Seller</option>
+                                                <option v-for="seller in sellersArray" :key="seller.seller_id"
+                                                    :value="seller.seller_id">
+                                                    {{ seller.business_name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block mb-1 font-medium">Product(s)</label>
+                                            <select v-model="newPromo.product_id" multiple
+                                                class="w-full px-3 py-2 rounded bg-gray-100 border border-gray-300 focus:outline-none">
+                                                <option v-for="product in products" :key="product.product_id"
+                                                    :value="product.product_id">
+                                                    {{ product.product_name }}
+                                                </option>
+                                            </select>
                                         </div>
                                         <div>
                                             <label class="block mb-1 font-medium">Promo Status</label>
