@@ -1,3 +1,15 @@
+## API Schema Type Generation
+
+- To keep TypeScript types in sync with the backend API schema, use the following script:
+	- Add to `package.json` scripts:
+		```json
+		"generate:api-types": "openapi-typescript http://127.0.0.1:8000/api/schema/ -o types/api.d.ts"
+		```
+	- Run with:
+		```powershell
+		npm run generate:api-types
+		```
+- This will regenerate `types/api.d.ts` from the live backend OpenAPI schema. Always re-run after backend schema changes.
 # Copilot Instructions for freshbytes-admin
 
 ## Overview
