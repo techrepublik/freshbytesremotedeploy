@@ -39,6 +39,7 @@ COPY --from=builder --chown=nuxtjs:nodejs /app/package.json ./package.json
 
 USER nuxtjs
 
+# Expose port 3000
 EXPOSE 3000
 
 # Start the application

@@ -23,8 +23,9 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_LINK: "http://5.104.84.97:8002"
+      // API_LINK: "http://5.104.84.97:8002"
       // API_LINK: process.env.NUXT_PUBLIC_API_LINK
+      API_LINK: process.env.NUXT_PUBLIC_API_LINK || 'http://localhost:8000'
     }
   },
 
