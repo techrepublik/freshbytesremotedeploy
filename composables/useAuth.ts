@@ -23,7 +23,21 @@ interface ResetPasswordResponse {
   }
 }
 
-export const useAuth = () => {
+export const useAuth = (): {
+  user: Ref<null | { id: number; email: string; name: string; role: string }>
+  accessToken: Ref<string | null>
+  refreshToken: Ref<string | null>
+  isLoading: Ref<boolean>
+  isLoggedIn: ComputedRef<boolean>
+  login: (credentials: { email: string; password: string }) => Promise<any>
+  logout: () => Promise<void>
+  resetPassword: (email: string) => Promise<ResetPasswordResponse>
+  refreshAccessToken: () => Promise<string>
+  register: (params: { email: string; password: string; first_name: string; last_name: string; user_name: string; user_phone: string }) => Promise<void>
+  setAccessToken: (newToken: string | null) => void
+  setRefreshToken: (newToken: string | null) => void
+  setUser: (newUser: any) => void
+} => {
   const config = useRuntimeConfig()
   const apiBase = config.public.API_LINK
   const user = useState<null | { id: number; email: string; name: string; role: string }>('auth.user', () => null)
@@ -226,7 +240,7 @@ export const useAuth = () => {
     isLoggedIn,
     login,
     logout,
-    resetPassword,
+    // resetPassword,
     refreshAccessToken,
     // 🆕 Add this:
     register,

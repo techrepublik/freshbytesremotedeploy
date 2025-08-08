@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   modules: ['@nuxt/icon', '@nuxt/eslint'],
   css: ['@/assets/css/main.css'],
   vite: {
-    plugins:[
+    plugins: [
       tailwindcss(),
     ]
   },
@@ -23,7 +23,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      API_LINK: process.env.NUXT_PUBLIC_API_LINK
+      API_LINK: "http://5.104.84.97:8002"
+      // API_LINK: process.env.NUXT_PUBLIC_API_LINK
     }
   },
 
