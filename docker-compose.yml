@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  freshbytes-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Nuxt/Nitro listen address
+      HOST: 0.0.0.0
+      PORT: 3000
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3000
+      # Public runtime config (available via useRuntimeConfig().public.API_LINK)
+      NUXT_PUBLIC_API_LINK: ${NUXT_PUBLIC_API_LINK:-http://5.104.84.97:8002}
+    restart: unless-stopped
+    networks:
+      - freshbytes-network
+
+networks:
+  freshbytes-network:
+    driver: bridge

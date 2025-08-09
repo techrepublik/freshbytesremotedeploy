@@ -1,9 +1,15 @@
 export default defineNuxtRouteMiddleware((to, from) => {
-  const { token } = useAuth()
+  const { accessToken } = useAuth()
   
-  if (!token.value) {
+  // If no token, redirect to login
+  if (!accessToken.value) {
     return navigateTo('/login')
-    } else {
-        return navigateTo('/home')
-    }
+  }
+  
+  // If user is on login page but has token, redirect to home
+  if (to.path === '/login' && accessToken.value) {
+    return navigateTo('/home')
+  }
+  
+  // Otherwise, allow the navigation to proceed
 })
