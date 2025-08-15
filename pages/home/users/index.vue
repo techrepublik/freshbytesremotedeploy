@@ -14,12 +14,12 @@
 
   const config = useRuntimeConfig();
   const api = config.public.API_LINK;
+  const { accessToken } = useAuth() // Use the auth composable
 
   // Filter states
   const searchTerm = ref('')
   const selectedRole = ref('')
   const selectedStatus = ref('')
-  const accessToken = ref('')
 
   const showUserAddModal = ref(false)
   const showUserUpdateModal = ref(false)
@@ -28,23 +28,18 @@
   const userToDelete = ref(null)
   const usersToDelete = ref(null)
   
-  // Compose query string for API
-  const queryString = computed(() => {
-    const params = new URLSearchParams()
-    if (searchTerm.value) params.append('search', searchTerm.value)
-    if (selectedRole.value) params.append('role', selectedRole.value)
-    if (selectedStatus.value) params.append('status', selectedStatus.value)
-    return params.toString() ? `?${params.toString()}` : ''
-  })
-
-  // Function to get auth headers
+  // Function to get auth headers - use the auth composable
   const getAuthHeaders = () => {
-    const accessTokenCookie = useCookie('auth-access-token')
-    const token = accessTokenCookie.value || accessToken.value
-    
-    return token ? {
-      Authorization: `Bearer ${token}`
-    } : {}
+    const token = accessToken.value
+    if (!token) {
+      console.warn('No access token available')
+      navigateTo('/login')
+      return {}
+    }
+    return {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
   }
 
   // Fetch users from your API with filters
@@ -53,14 +48,59 @@
     { 
       server: false,
       headers: computed(() => getAuthHeaders()),
+      transform: (response) => {
+        console.log('Transform input:', response)
+        // Handle different response formats
+        if (Array.isArray(response)) {
+          return response
+        } else if (response.results && Array.isArray(response.results)) {
+          return response.results
+        } else if (response.data && Array.isArray(response.data)) {
+          return response.data
+        }
+        return response
+      },
       onResponseError({ response }) {
         console.error('Users API Error:', response.status, response._data);
         if (response.status === 401) {
+          console.log('Unauthorized - redirecting to login')
           navigateTo('/login');
+        } else if (response.status === 403) {
+          console.log('Forbidden - insufficient permissions')
+          alert('You do not have permission to access user data')
         }
-      }
+      },
+      // Add retry logic for failed requests
+      retry: 1,
+      retryDelay: 1000
     }
   )
+
+  // Add this to your script setup in pages/home/users/index.vue
+  onMounted(async () => {
+    console.log('Access token:', accessToken.value)
+    console.log('API endpoint:', `${api}/api/users/?is_deleted=false`)
+    
+    // Validate API connection first
+    const isConnected = await validateApiConnection()
+    if (!isConnected) {
+      console.log('API connection failed, skipping data fetch')
+      return
+    }
+    
+    // Test the API call directly
+    try {
+      const testResponse = await $fetch(`${api}/api/users/?is_deleted=false`, {
+        headers: getAuthHeaders()
+      })
+      console.log('Direct API test response:', testResponse)
+    } catch (testError) {
+      console.error('Direct API test error:', testError)
+    }
+    
+    console.log('useFetch data:', data.value)
+    console.log('useFetch error:', error.value)
+  })
 
   // Store all users (unfiltered)
   const allUsers = ref([])
@@ -71,51 +111,56 @@
   const pageSize = 20
 
   const getUserRole = (user) => {
+    if (user.display_role) {
+      return user.display_role
+    }
+    
+    // Fallback logic
     if (user.is_superuser) return 'Administrator'
     if (user.role === 'seller') return 'Seller'
     return 'Customer'
   }
 
   const getUserStatus = (user) => {
-  if (user.is_deleted) return 'Deleted'
-  if (user.is_active) return 'Active'
-  return 'Suspended'
-}
+    if (user.is_deleted) return 'Deleted'
+    if (user.is_active) return 'Active'
+    return 'Suspended'
+  }
 
   // Apply filters locally to allUsers
   const filteredUsers = computed(() => {
     let filtered = [...allUsers.value]
 
-  // Apply search filter
-  if (searchTerm.value) {
-    const searchLower = searchTerm.value.toLowerCase();
-    filtered = filtered.filter(user => {
-      return user.user_name?.toLowerCase().includes(searchLower) || 
-             user.user_email?.toLowerCase().includes(searchLower) ||
-             user.first_name?.toLowerCase().includes(searchLower) || 
-             user.last_name?.toLowerCase().includes(searchLower);
-    });
-  }
-  
-  // Apply role filter
-  if (selectedRole.value) {
-    filtered = filtered.filter(user => {
-      const userRole = getUserRole(user);
-      return userRole.toLowerCase() === selectedRole.value.toLowerCase();
-    });
-  }
-  
-  // Apply status filter
-  if (selectedStatus.value) {
-    if (selectedStatus.value === 'Active') {
-      filtered = filtered.filter(user => user.is_active === true && user.is_deleted === false);
-    } else if (selectedStatus.value === 'Suspended') {
-      filtered = filtered.filter(user => user.is_active === false && user.is_deleted === false);
+    // Apply search filter
+    if (searchTerm.value) {
+      const searchLower = searchTerm.value.toLowerCase();
+      filtered = filtered.filter(user => {
+        return user.user_name?.toLowerCase().includes(searchLower) || 
+               user.user_email?.toLowerCase().includes(searchLower) ||
+               user.first_name?.toLowerCase().includes(searchLower) || 
+               user.last_name?.toLowerCase().includes(searchLower);
+      });
     }
-  }
-  
-  return filtered;
-});
+    
+    // Apply role filter
+    if (selectedRole.value) {
+      filtered = filtered.filter(user => {
+        const userRole = getUserRole(user);
+        return userRole.toLowerCase() === selectedRole.value.toLowerCase();
+      });
+    }
+    
+    // Apply status filter
+    if (selectedStatus.value) {
+      if (selectedStatus.value === 'Active') {
+        filtered = filtered.filter(user => user.is_active === true && user.is_deleted === false);
+      } else if (selectedStatus.value === 'Suspended') {
+        filtered = filtered.filter(user => user.is_active === false && user.is_deleted === false);
+      }
+    }
+    
+    return filtered;
+  });
 
   // Paginate the filtered results
   const paginatedUsers = computed(() => {
@@ -136,68 +181,72 @@
   })
 
   // Watch for API data changes (only runs once when component loads)
-watch(data, (val) => {
-  if (val && Array.isArray(val) && val.length > 0) {
-    allUsers.value = val
-      .filter(u => u.is_deleted === false)
-      .map(u => ({
-        user_id: u.user_id,
-        user_name: u.user_name,
-        first_name: u.first_name || '',
-        last_name: u.last_name || '',
-        user_phone: u.user_phone || '',
-        user_address: u.user_address || '',
-        avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.user_name)}`,
-        user_email: u.user_email,
-        role: u.role || '',
-        is_superuser: u.is_superuser || false,
-        is_active: u.is_active || false,
-        created_at: u.created_at,
-        updated_at: u.updated_at,
-        deleted_at: u.deleted_at,
-        is_deleted: u.is_deleted,
-        selected: false
-      }))
-  } else {
-      // Add test data when no API data - with new role logic
-      allUsers.value = Array.from({ length: 50 }, (_, i) => {
-        let role, is_admin, is_superuser;
-        
-        // Create diverse test data
-        if (i % 20 === 0) {
-          // Super User (is_superuser: true)
-          role = 'Administrator';
-          is_superuser = true;
-        } else if (i % 10 === 0) {
-          // Seller
-          role = 'seller';
-          is_admin = false;
-          is_superuser = false;
-        } else {
-          // Customer
-          role = 'customer';
-          is_admin = false;
-          is_superuser = false;
-        }
-        
-        return {
-          user_id: `uid${String(i + 1).padStart(5, '0')}`,
-          user_name: `user${i + 1}`,
-          first_name: `First${i + 1}`,
-          last_name: `Last${i + 1}`,
-          user_phone: `+639${String(Math.floor(Math.random() * 100000000)).padStart(9, '0')}`,
-          user_address: `${i + 1} Sample Street, Manila, Philippines`,
-          avatar: `https://ui-avatars.com/api/?name=User${i + 1}`,
-          user_email: `user${i + 1}@example.com`,
-          role: role,
-          status: i % 7 === 0 ? 'Suspended' : 'Active',
-          is_superuser: is_superuser,
-          is_active: i % 7 !== 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          selected: false
-        }
-      })
+  watch(data, (val) => {
+    console.log('Raw API data:', val)
+    console.log('API data type:', typeof val)
+    console.log('Is array:', Array.isArray(val))
+    
+    if (val) {
+      // Handle different response formats
+      let users = []
+      if (Array.isArray(val)) {
+        users = val
+      } else if (val.results && Array.isArray(val.results)) {
+        users = val.results
+      } else if (val.data && Array.isArray(val.data)) {
+        users = val.data
+      }
+      
+      console.log('Extracted users:', users)
+      
+      if (users.length > 0) {
+        allUsers.value = users
+          .filter(u => u.is_deleted === false)
+          .map(u => {
+            // Determine the correct role display
+            let displayRole = ''
+            if (u.is_superuser) {
+              displayRole = 'Administrator'
+            } else if (u.role === 'seller') {
+              displayRole = 'Seller'
+            } else {
+              displayRole = 'Customer'
+            }
+
+            return {
+              user_id: u.user_id,
+              user_name: u.user_name || '',
+              first_name: u.first_name || '',
+              last_name: u.last_name || '',
+              user_phone: u.user_phone || '',
+              user_address: u.user_address || '',
+              street: u.street || '',
+              barangay: u.barangay || '',
+              city: u.city || '',
+              province: u.province || '',
+              zip_code: u.zip_code || '',
+              avatar: u.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.user_name || 'User')}`,
+              user_email: u.user_email || '',
+              role: u.role || 'customer', // Store the actual backend role
+              display_role: displayRole, // Store the display role
+              is_superuser: u.is_superuser || false,
+              is_staff: u.is_staff || false,
+              is_active: u.is_active || false,
+              created_at: u.created_at,
+              updated_at: u.updated_at,
+              deleted_at: u.deleted_at,
+              is_deleted: u.is_deleted || false,
+              selected: false
+            }
+          })
+        console.log('Processed users:', allUsers.value)
+      } else {
+        console.log('No users found in response')
+        allUsers.value = []
+      }
+    } else {
+      console.log('No data received from API')
+      allUsers.value = []
     }
   }, { immediate: true })
 
@@ -250,7 +299,7 @@ watch(data, (val) => {
   }
 
   function closeUserUpdateModal() {
-    showUserUpdateModal.value = false;  // Change from showUpdateModal to showUserUpdateModal
+    showUserUpdateModal.value = false;
     userToUpdate.value = null;
   }
 
@@ -259,11 +308,6 @@ watch(data, (val) => {
     allUsers.value.forEach(user => {
       user.selected = false;
     });
-  }
-
-  function handleUserUpdateSuccess() {
-    manualRefresh(); // You might have a function like this
-    closeUserUpdateModal();
   }
 
   // Function to open modal for bulk deletion
@@ -403,8 +447,156 @@ watch(data, (val) => {
     openDeleteModal(user)
   }
 
-  function handleUserAddSuccess() { 
-    manualRefresh() // Only refresh when user is actually added
+  function handleUserAddSuccess(newUser) { 
+    console.log('New user added:', newUser)
+    
+    // Add the new user to the local state immediately if newUser is provided
+    if (newUser && newUser.user_id) {
+      // Determine display role
+      let displayRole = ''
+      if (newUser.is_superuser) {
+        displayRole = 'Administrator'
+      } else if (newUser.role === 'seller') {
+        displayRole = 'Seller'
+      } else {
+        displayRole = 'Customer'
+      }
+
+      const userForList = {
+        user_id: newUser.user_id,
+        user_name: newUser.user_name || '',
+        first_name: newUser.first_name || '',
+        last_name: newUser.last_name || '',
+        user_phone: newUser.user_phone || '',
+        user_address: newUser.user_address || '',
+        street: newUser.street || '',
+        barangay: newUser.barangay || '',
+        city: newUser.city || '',
+        province: newUser.province || '',
+        zip_code: newUser.zip_code || '',
+        avatar: newUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(newUser.user_name)}`,
+        user_email: newUser.user_email || '',
+        role: newUser.role || 'customer',
+        display_role: displayRole,
+        is_superuser: newUser.is_superuser || false,
+        is_staff: newUser.is_staff || false,
+        is_active: newUser.is_active || false,
+        created_at: newUser.created_at,
+        updated_at: newUser.updated_at,
+        deleted_at: newUser.deleted_at,
+        is_deleted: newUser.is_deleted || false,
+        selected: false
+      }
+      
+      // Add to beginning of list
+      allUsers.value.unshift(userForList)
+    }
+    
+    // Refresh from API to ensure consistency
+    manualRefresh()
+    
+    // Close modal
+    closeUserAddModal()
+  }
+
+  function handleUserUpdateSuccess(updatedUser) {
+  console.log('User updated:', updatedUser)
+  
+  if (updatedUser && updatedUser.user_id) {
+    // Find and update the user in the local array
+    const index = allUsers.value.findIndex(u => u.user_id === updatedUser.user_id)
+    
+    if (index !== -1) {
+      // Determine display role
+      let displayRole = ''
+      if (updatedUser.is_superuser) {
+        displayRole = 'Administrator'
+      } else if (updatedUser.role === 'seller') {
+        displayRole = 'Seller'
+      } else {
+        displayRole = 'Customer'
+      }
+
+      // Update the user with all the new data
+      allUsers.value[index] = {
+        ...allUsers.value[index], // Keep existing data
+        ...updatedUser, // Overwrite with updated data
+        display_role: displayRole,
+        selected: false // Reset selection state
+      }
+      
+      console.log('User updated in local state:', allUsers.value[index])
+    } else {
+      console.warn('User not found in local array, refreshing data')
+      // If user not found locally, refresh from API
+      manualRefresh()
+    }
+  }
+  
+  // Close modal
+  closeUserUpdateModal()
+}
+
+  // Add this function to your existing script
+  const forceRefresh = async () => {
+    apiLoading.value = true
+    try {
+      console.log('Force refreshing data...')
+      await refresh()
+      console.log('Data after refresh:', data.value)
+      
+      if (!data.value || (Array.isArray(data.value) && data.value.length === 0)) {
+        console.warn('No data received after refresh')
+        // Show user-friendly message
+        alert('No user data available. Please check your connection and try again.')
+      }
+    } catch (error) {
+      console.error('Force refresh failed:', error)
+      await handleApiError(error)
+    } finally {
+      apiLoading.value = false
+    }
+  }
+
+  // Add this function to validate API connectivity
+  const validateApiConnection = async () => {
+    if (!accessToken.value) {
+      console.error('No access token available')
+      navigateTo('/login')
+      return false
+    }
+    
+    try {
+      // Test API connectivity with a simple call
+      await $fetch(`${api}/api/users/me/`, {
+        headers: getAuthHeaders()
+      })
+      return true
+    } catch (error) {
+      console.error('API connection failed:', error)
+      if (error.status === 401) {
+        navigateTo('/login')
+      }
+      return false
+    }
+  }
+
+  // Add this function to handle token refresh
+  const handleApiError = async (error) => {
+    if (error.status === 401) {
+      console.log('Token expired, attempting refresh...')
+      try {
+        const { refreshAccessToken } = useAuth()
+        await refreshAccessToken()
+        
+        // Retry the original request
+        await refresh()
+        console.log('Token refreshed successfully')
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError)
+        navigateTo('/login')
+      }
+    }
   }
 
 </script>

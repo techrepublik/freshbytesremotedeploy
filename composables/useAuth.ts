@@ -181,14 +181,14 @@ export const useAuth = (): {
     }
   }
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string): Promise<ResetPasswordResponse> => {
     const response = await $fetch<ResetPasswordResponse>(`${apiBase}/api/auth/reset-password/`, {
       method: 'POST',
       body: {
         user_email: email
       }
     })
-    return response.data
+    return response
   }
 
   const isLoggedIn = computed(() => !!user.value && !!accessToken.value)
@@ -240,9 +240,8 @@ export const useAuth = (): {
     isLoggedIn,
     login,
     logout,
-    // resetPassword,
+    resetPassword,
     refreshAccessToken,
-    // 🆕 Add this:
     register,
     // Internal setters (use cautiously)
     setAccessToken,

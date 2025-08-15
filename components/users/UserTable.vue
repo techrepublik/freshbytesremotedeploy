@@ -242,9 +242,14 @@ function formatDate(dateString) {
             </div>
           </td>
           <td class="px-4 py-3 font-semibold">{{ user.user_email }}</td>
-          <td class="px-4 py-3">
-            <span :class="getRoleBadgeClass(user)">
-              {{ getRoleDisplayName(user) }}
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <span class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium"
+                  :class="{
+                    'bg-green-100 text-green-800': user.display_role === 'Administrator',
+                    'bg-blue-100 text-blue-800': user.display_role === 'Seller',
+                    'bg-gray-100 text-gray-800': user.display_role === 'Customer'
+                  }">
+              {{ user.display_role || getUserRole(user) }}
             </span>
           </td>
           <td class="p-4 text-base font-medium whitespace-nowrap">
