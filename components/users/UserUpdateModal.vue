@@ -205,14 +205,12 @@ async function updateUser() {
   loading.value = true;
   try {
     // For administrators (superuser), send 'customer' as role and set is_superuser to true
-    let role = editedUser.value.role;
+    let apiRole = editedUser.value.role;
     let is_superuser = editedUser.value.is_superuser;
-    let is_staff = editedUser.value.is_staff;
-    
-    if (role === 'superuser') {
-      role = 'customer'; // Use customer as the base role for admins
+
+    if (apiRole === 'superuser') {
+      apiRole = 'admin';
       is_superuser = true;
-      is_staff = true;
     }
 
     // Prepare the update data according to your API structure
@@ -228,9 +226,9 @@ async function updateUser() {
       city: editedUser.value.city,
       province: editedUser.value.province,
       zip_code: editedUser.value.zip_code,
-      role: role,
-      is_superuser: is_superuser,
-      is_staff: is_staff,
+      role: apiRole,
+      is_superuser,
+      is_staff: editedUser.value.is_staff,
       is_active: editedUser.value.is_active
     };
 
@@ -284,8 +282,8 @@ async function updateUser() {
     // Emit updated user data with proper structure
     const updatedUserForParent = {
       ...userResponse,
-      display_role: role === 'customer' && is_superuser ? 'Administrator' : 
-                   role === 'seller' ? 'Seller' : 'Customer'
+      display_role: apiRole === 'customer' && is_superuser ? 'Administrator' : 
+                   apiRole === 'seller' ? 'Seller' : 'Customer'
     };
 
     emit('updated', updatedUserForParent);
@@ -364,6 +362,42 @@ function selectAddress(suggestion) {
   addressQuery.value = suggestion.display_name;
   addressSuggestions.value = [];
 }
+
+// Manual refresh function
+async function manualRefresh() {
+  try {
+    // Fetch the updated list of users
+    const response = await $fetch(`${api}/api/users/`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    // Assuming the response contains the updated list of users
+    allUsers.value = response.results || [];
+    
+    console.log('User list updated:', allUsers.value);
+  } catch (error) {
+    console.error('Failed to refresh user list:', error);
+  }
+}
+
+// Handle user update success
+async function handleUserUpdateSuccess(updatedUser) {
+  // Update local state if needed
+  // For example, find the updated user in the allUsers array and update its data
+  const userIndex = allUsers.value.findIndex(user => user.user_id === updatedUser.user_id);
+  if (userIndex !== -1) {
+    allUsers.value[userIndex] = updatedUser;
+  }
+  
+  // Optionally, you can refetch the entire user list
+  await manualRefresh(); // This should call your API and update allUsers.value
+  closeUserUpdateModal();
+}
+
+onMounted(() => {
+  manualRefresh();
+});
 </script>
 
 <template>
@@ -583,8 +617,8 @@ function selectAddress(suggestion) {
                 <input type="text"
                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
                        placeholder="Type your full address for suggestions"
-                       v-model="addressQuery"
-                       autocomplete="off">
+                       v-model="editedUser.user_address"
+                       autocomplete="on">
                 <ul v-if="addressSuggestions.length"
                     class="absolute bg-white border border-gray-300 rounded shadow mt-1 z-50 w-full max-h-48 overflow-auto">
                   <li v-for="suggestion in addressSuggestions"

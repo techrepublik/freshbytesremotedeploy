@@ -120,6 +120,7 @@ const closeDropdown = () => {
 // Handle update user
 const handleUpdateUser = (user) => {
   closeDropdown()
+  console.log(user.user_id)
   emit('update-user', user)
 }
 
